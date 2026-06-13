@@ -35,7 +35,7 @@ export default {
                         </button>
 
                         <div @click="currentView = 'home'" class="flex items-center gap-2 cursor-pointer group">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-blue-600 flex items-center justify-center shadow-glow group-hover:rotate-12 transition-transform duration-300">
+                            <div class="hidden sm:flex w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-blue-600 items-center justify-center shadow-glow group-hover:rotate-12 transition-transform duration-300">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -112,7 +112,6 @@ export default {
         <transition name="fade-slide">
             <div v-if="isMobileMenuOpen" class="fixed inset-0 z-[60] lg:hidden" @click="isMobileMenuOpen = false">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-                
                 <transition name="drawer-slide">
                     <div v-if="isMobileMenuOpen" @click.stop class="absolute right-0 top-0 bottom-0 w-64 bg-white dark:bg-dark-card border-l border-slate-200 dark:border-dark-border shadow-2xl flex flex-col">
                         <div class="p-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">

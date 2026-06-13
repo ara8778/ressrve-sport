@@ -31,7 +31,7 @@ export default {
         };
     },
     template: `
-        <div class="pt-32 pb-24 relative z-10 flex flex-col items-center justify-center min-h-[90vh]">
+        <div class="pt-24 md:pt-32 pb-16 md:pb-24 relative z-10 flex flex-col items-center justify-center min-h-[90vh] overflow-hidden sm:overflow-visible">
             
             <div class="absolute inset-0 bg-grid-pattern opacity-40 z-0 pointer-events-none"></div>
             <div class="absolute top-1/3 left-1/4 w-80 h-80 bg-brand-500/10 rounded-full blur-[100px] pointer-events-none"></div>
@@ -49,11 +49,11 @@ export default {
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">پلتفرم مدرن و لوکس رزرو اماکن ورزشی</p>
                 </div>
 
-                <div class="bg-white/90 dark:bg-[#0b1120]/90 backdrop-blur-2xl border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-colors duration-500">
+                <div class="bg-white/90 dark:bg-[#0b1120]/90 backdrop-blur-2xl border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-5 sm:p-6 md:p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-colors duration-500">
                     
                     <div class="relative flex p-1 bg-slate-50 dark:bg-dark-bg/95 border border-slate-200 dark:border-dark-border rounded-2xl mb-8 select-none transition-colors duration-500">
-                        <div class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-l from-brand-500 to-cyan-400 rounded-xl shadow-lg shadow-brand-500/20 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                             :class="isLogin ? 'translate-x-0' : '-translate-x-[calc(100%-8px)]'"></div>
+                        <div class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-l from-brand-500 to-cyan-400 rounded-xl shadow-lg shadow-brand-500/20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                             :class="isLogin ? 'right-1' : 'left-1'"></div>
                         
                         <button @click="isLogin = true" class="w-1/2 py-2.5 text-xs font-black relative z-10 transition-colors duration-300 rounded-xl"
                                 :class="isLogin ? 'text-white dark:text-dark-bg' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
@@ -65,7 +65,7 @@ export default {
                         </button>
                     </div>
 
-                    <div class="relative min-h-[290px]">
+                    <div class="relative">
                         <transition name="fade-slide" mode="out-in">
                             
                             <form v-if="isLogin" key="login" @submit.prevent="handleAuth" class="space-y-4">
@@ -103,7 +103,7 @@ export default {
                                     <a href="#" class="text-brand-500 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 font-bold transition-colors">فراموشی رمز عبور؟</a>
                                 </div>
 
-                                <button type="submit" class="w-full relative overflow-hidden bg-gradient-to-r from-brand-500 to-cyan-400 hover:from-brand-600 hover:to-cyan-500 text-white dark:text-dark-bg font-extrabold py-3.5 rounded-xl text-sm tracking-wide shadow-glow shadow-brand-500/10 active:scale-[0.99] transition-all duration-300 shimmer-btn mt-4">
+                                <button type="submit" class="w-full relative overflow-hidden bg-gradient-to-r from-brand-500 to-cyan-400 hover:from-brand-600 hover:to-cyan-500 text-white dark:text-dark-bg font-extrabold py-3.5 rounded-xl text-sm tracking-wide shadow-glow shadow-brand-500/10 active:scale-[0.99] transition-all duration-300 shimmer-btn">
                                     ورود هوشمند به حساب کاربری
                                 </button>
                             </form>
@@ -148,7 +148,7 @@ export default {
                                     </div>
                                 </div>
 
-                                <button type="submit" class="w-full relative overflow-hidden bg-gradient-to-r from-brand-500 to-cyan-400 hover:from-brand-600 hover:to-cyan-500 text-white dark:text-dark-bg font-extrabold py-3.5 rounded-xl text-sm tracking-wide shadow-glow shadow-brand-500/10 active:scale-[0.99] transition-all duration-300 shimmer-btn mt-4">
+                                <button type="submit" class="w-full relative overflow-hidden bg-gradient-to-r from-brand-500 to-cyan-400 hover:from-brand-600 hover:to-cyan-500 text-white dark:text-dark-bg font-extrabold py-3.5 rounded-xl text-sm tracking-wide shadow-glow shadow-brand-500/10 active:scale-[0.99] transition-all duration-300 shimmer-btn">
                                     ثبت‌نام و عضویت سریع
                                 </button>
                             </form>
@@ -161,7 +161,7 @@ export default {
                         <div class="relative flex justify-center text-[10px]"><span class="bg-white dark:bg-[#0b1120] px-3 text-slate-500 font-bold transition-colors duration-500">یا ورود سریع با</span></div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 pb-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-1">
                         <button type="button" class="social-btn-hover flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-all duration-300 active:scale-[0.98]">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
