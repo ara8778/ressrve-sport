@@ -14,16 +14,6 @@ export const store = reactive({
         venue: {},
         slot: null
     },
-    selectedVenue: {
-        name: '',
-        city: '',
-        price: '',
-        gender: '',
-        rating: '5.0',
-        image: '',
-        timeSlot: '',
-        slots: []
-    },
     filters: {
         city: 'قم',
         type: 'سالن فوتسال',
@@ -188,7 +178,17 @@ export const store = reactive({
             ]
         }
     ],
-    filteredVenues: []
+    filteredVenues: [],
+    selectedVenue: {
+        name: '',
+        city: '',
+        price: '',
+        gender: '',
+        rating: '5.0',
+        image: '',
+        timeSlot: '',
+        slots: []
+    }
 });
 
 export const toggleTheme = () => {
@@ -208,7 +208,7 @@ export const toggleNotifications = () => {
 };
 
 export const addNotification = (title, message, type = 'success') => {
-    const id = Date.now();
+    const id = Date.now() + Math.random(); // تولید شناسه کاملاً منحصر‌به‌فرد
     const time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
     const notif = { id, title, message, type, time, read: false };
     
@@ -219,8 +219,12 @@ export const addNotification = (title, message, type = 'success') => {
         store.unreadNotifications++;
     }
 
+    // متد splice بدون اختلال در مکانیزم Reactivity المان منقضی شده را خارج می‌کند
     setTimeout(() => {
-        store.toasts = store.toasts.filter(t => t.id !== id);
+        const idx = store.toasts.findIndex(t => t.id === id);
+        if (idx !== -1) {
+            store.toasts.splice(idx, 1);
+        }
     }, 5000);
 };
 
