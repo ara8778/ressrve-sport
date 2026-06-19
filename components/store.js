@@ -1,7 +1,7 @@
 const { reactive } = window.Vue;
 
 export const store = reactive({
-    currentView: 'home', // 'home' | 'results' | 'auth'
+    currentView: 'home', // 'home' | 'results' | 'auth' | 'venue-detail'
     isDark: true,
     isMobileMenuOpen: false,
     showNotifications: false,
@@ -14,6 +14,16 @@ export const store = reactive({
         venue: {},
         slot: null
     },
+    selectedVenue: {
+        name: '',
+        city: '',
+        price: '',
+        gender: '',
+        rating: '5.0',
+        image: '',
+        timeSlot: '',
+        slots: []
+    },
     filters: {
         city: 'قم',
         type: 'سالن فوتسال',
@@ -22,8 +32,8 @@ export const store = reactive({
     },
     options: {
         city: ['قم', 'تهران', 'کرج'],
-        type: ['سالن فوتسال', 'چمن مصنوعی', 'سالن والیبال'],
-        day: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
+        type: ['سالن فوتسال', 'چمن مصنوعی', 'سالن والیبال','همه موارد'],
+        day: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه','همه روز ها'],
         time: ['صبح (۸ تا ۱۲)', 'عصر (۱۴ تا ۱۸)', 'شب (۱۸ تا ۲۴)']
     },
     popularVenues: [

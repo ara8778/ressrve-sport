@@ -3,13 +3,21 @@ import { store, toggleDropdown, selectOption, navigateToResults, openQuickBook, 
 export default {
     setup() {
         const { toRefs } = window.Vue;
+
+        const goToDetail = (venue) => {
+            store.selectedVenue = venue;
+            store.currentView = 'venue-detail';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
         return { 
             ...toRefs(store), 
             toggleDropdown, 
             selectOption, 
             navigateToResults, 
             openQuickBook, 
-            handleSlotBooking 
+            handleSlotBooking,
+            goToDetail
         };
     },
     template: `
@@ -264,7 +272,7 @@ export default {
                                     {{ venue.price }} <span class="text-[10px] font-normal text-slate-400">تومان</span>
                                 </div>
                             </div>
-                            <button @click="openQuickBook(venue)" class="group/btn flex items-center gap-2 bg-brand-500 hover:bg-gradient-to-r hover:from-brand-400 hover:to-cyan-400 text-white dark:text-dark-bg font-black px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:scale-[1.05]">
+                            <button @click="goToDetail(venue)" class="group/btn flex items-center gap-2 bg-brand-500 hover:bg-gradient-to-r hover:from-brand-400 hover:to-cyan-400 text-white dark:text-dark-bg font-black px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:scale-[1.05]">
                                 <span class="text-xs">رزرو فوری</span>
                                 <svg class="w-4 h-4 transform group-hover/btn:-translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                             </button>

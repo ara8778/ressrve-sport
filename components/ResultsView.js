@@ -3,6 +3,13 @@ import { store, toggleDropdown, selectOption, applyFilters, resetFilters, handle
 export default {
     setup() {
         const { toRefs } = window.Vue;
+
+        const goToDetail = (venue) => {
+            store.selectedVenue = venue;
+            store.currentView = 'venue-detail';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
         return { 
             ...toRefs(store), 
             toggleDropdown, 
@@ -10,7 +17,8 @@ export default {
             applyFilters, 
             resetFilters, 
             handleSlotBooking, 
-            openQuickBook 
+            openQuickBook,
+            goToDetail
         };
     },
     template: `
@@ -33,7 +41,7 @@ export default {
                         <div class="relative" @click.stop>
                             <div @click="toggleDropdown('city')" class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-xs rounded-xl p-3 text-slate-700 dark:text-slate-300 flex items-center justify-between cursor-pointer hover:border-brand-500">
                                 <span>{{ filters.city }}</span>
-                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                             <transition name="dropdown">
                                 <div v-if="activeDropdown === 'city'" class="absolute left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
@@ -45,7 +53,7 @@ export default {
                         <div class="relative" @click.stop>
                             <div @click="toggleDropdown('type')" class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-xs rounded-xl p-3 text-slate-700 dark:text-slate-300 flex items-center justify-between cursor-pointer hover:border-brand-500">
                                 <span>{{ filters.type }}</span>
-                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                             <transition name="dropdown">
                                 <div v-if="activeDropdown === 'type'" class="absolute left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
@@ -57,7 +65,7 @@ export default {
                         <div class="relative" @click.stop>
                             <div @click="toggleDropdown('day')" class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-xs rounded-xl p-3 text-slate-700 dark:text-slate-300 flex items-center justify-between cursor-pointer hover:border-brand-500">
                                 <span>{{ filters.day }}</span>
-                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                             <transition name="dropdown">
                                 <div v-if="activeDropdown === 'day'" class="absolute left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 max-h-48 overflow-y-auto">
@@ -69,7 +77,7 @@ export default {
                         <div class="relative" @click.stop>
                             <div @click="toggleDropdown('time')" class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-xs rounded-xl p-3 text-slate-700 dark:text-slate-300 flex items-center justify-between cursor-pointer hover:border-brand-500">
                                 <span>{{ filters.time }}</span>
-                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="w-4 h-4 text-brand-500 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                             <transition name="dropdown">
                                 <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
@@ -96,20 +104,21 @@ export default {
 
                 <div v-if="filteredVenues.length === 0" class="glass-panel rounded-3xl p-16 text-center border-brand-500/10 my-12">
                     <div class="w-16 h-16 bg-brand-50 dark:bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-brand-500 dark:text-brand-400 shadow-glow">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-2">موردی پیدا نشد!</h4>
                     <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-sm leading-loose">متأسفانه برای فیلترهای انتخاب شده سالن ورزشی فعالی یافت نشد. لطفاً روز هفته یا نوع سالن ورزشی خود را تغییر دهید.</p>
                     <button @click="resetFilters" class="mt-6 bg-brand-500 hover:bg-brand-400 text-white dark:text-dark-bg font-bold px-6 py-2.5 rounded-xl transition-all duration-300">بازنشانی فیلترها</button>
                 </div>
 
+                <!-- بازگردانی کامل به چیدمان و استایل ۳ ستونه اورجینال نتایج جستجو -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <div v-for="(venue, index) in filteredVenues" :key="index"
                          class="group glass-card rounded-[2.5rem] p-6 hover:border-brand-500/40 hover:shadow-[0_20px_40px_-15px_rgba(6,182,212,0.25)] transition-all duration-500 hover:-translate-y-2 flex flex-col justify-between">
                         
                         <div>
                             <div class="flex items-center justify-between gap-4 mb-6">
-                                <div class="space-y-1.5 flex-1">
+                                <div class="space-y-1.5 flex-1 text-right">
                                     <div class="inline-flex items-center gap-1.5 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-bold px-2.5 py-1 rounded-lg border border-brand-200 dark:border-brand-500/20">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         {{ venue.timeSlot }}
@@ -164,7 +173,8 @@ export default {
                             </div>
                         </div>
 
-                        <button @click="openQuickBook(venue)" class="w-full bg-white dark:bg-dark-bg/80 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg border border-slate-200 dark:border-dark-border hover:border-brand-500 py-3 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-glow">
+                        <!-- دکمه هدایت به جزییات بجای بازکردن مودال کواک رزرو -->
+                        <button @click="goToDetail(venue)" class="w-full bg-white dark:bg-dark-bg/80 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg border border-slate-200 dark:border-dark-border hover:border-brand-500 py-3 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-glow">
                             <span>مشاهده بیشتر و رزرو سانس‌های دیگر ...</span>
                             <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
                         </button>

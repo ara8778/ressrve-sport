@@ -104,6 +104,7 @@
             <home-view v-if="currentView === 'home'" key="home"></home-view>
             <results-view v-else-if="currentView === 'results'" key="results"></results-view>
             <auth-view v-else-if="currentView === 'auth'" key="auth"></auth-view>
+            <venue-detail-view v-else-if="currentView === 'venue-detail'" key="venue-detail"></venue-detail-view>
         </transition>
     </div>
 
@@ -118,6 +119,7 @@
     import HomeView from './components/HomeView.js';
     import ResultsView from './components/ResultsView.js';
     import AuthView from './components/AuthView.js';
+    import VenueDetailView from './components/VenueDetailView.js';
     import BookingModal from './components/BookingModal.js';
     import ToastList from './components/ToastList.js';
     import AppFooter from './components/AppFooter.js';
@@ -146,6 +148,7 @@
     app.component('home-view', HomeView);
     app.component('results-view', ResultsView);
     app.component('auth-view', AuthView);
+    app.component('venue-detail-view', VenueDetailView);
     app.component('booking-modal', BookingModal);
     app.component('toast-list', ToastList);
     app.component('app-footer', AppFooter);
