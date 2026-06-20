@@ -1,7 +1,7 @@
 const { reactive } = window.Vue;
 
 export const store = reactive({
-    currentView: 'home', // 'home' | 'results' | 'auth' | 'venue-detail'
+    currentView: 'home', // 'home' | 'results' | 'auth' | 'venue-detail' | 'dashboard'
     isDark: true,
     isMobileMenuOpen: false,
     showNotifications: false,
@@ -13,6 +13,13 @@ export const store = reactive({
         show: false,
         venue: {},
         slot: null
+    },
+    // اضافه شدن اطلاعات کاربر برای داشبورد
+    user: {
+        name: 'امیررضا عزیزی',
+        phone: '09190477898',
+        credit: '0',
+        purchases: '0'
     },
     filters: {
         city: 'قم',
@@ -208,7 +215,7 @@ export const toggleNotifications = () => {
 };
 
 export const addNotification = (title, message, type = 'success') => {
-    const id = Date.now() + Math.random(); // تولید شناسه کاملاً منحصر‌به‌فرد
+    const id = Date.now() + Math.random(); 
     const time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
     const notif = { id, title, message, type, time, read: false };
     
@@ -219,7 +226,6 @@ export const addNotification = (title, message, type = 'success') => {
         store.unreadNotifications++;
     }
 
-    // متد splice بدون اختلال در مکانیزم Reactivity المان منقضی شده را خارج می‌کند
     setTimeout(() => {
         const idx = store.toasts.findIndex(t => t.id === id);
         if (idx !== -1) {

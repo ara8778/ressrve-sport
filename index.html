@@ -105,6 +105,8 @@
             <results-view v-else-if="currentView === 'results'" key="results"></results-view>
             <auth-view v-else-if="currentView === 'auth'" key="auth"></auth-view>
             <venue-detail-view v-else-if="currentView === 'venue-detail'" key="venue-detail"></venue-detail-view>
+            <!-- اضافه شدن صفحه داشبورد -->
+            <dashboard-view v-else-if="currentView === 'dashboard'" key="dashboard"></dashboard-view>
         </transition>
     </div>
 
@@ -120,6 +122,7 @@
     import ResultsView from './components/ResultsView.js';
     import AuthView from './components/AuthView.js';
     import VenueDetailView from './components/VenueDetailView.js';
+    import DashboardView from './components/DashboardView.js';
     import BookingModal from './components/BookingModal.js';
     import ToastList from './components/ToastList.js';
     import AppFooter from './components/AppFooter.js';
@@ -149,6 +152,7 @@
     app.component('results-view', ResultsView);
     app.component('auth-view', AuthView);
     app.component('venue-detail-view', VenueDetailView);
+    app.component('dashboard-view', DashboardView);
     app.component('booking-modal', BookingModal);
     app.component('toast-list', ToastList);
     app.component('app-footer', AppFooter);

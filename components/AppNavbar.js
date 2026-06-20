@@ -99,7 +99,12 @@ export default {
 
                         <div class="h-6 w-px bg-slate-300 dark:bg-dark-border hidden sm:block"></div>
                         
-                        <button @click="currentView = 'auth'" class="flex items-center gap-2 bg-white dark:bg-dark-card hover:bg-brand-500 dark:hover:bg-brand-500 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-dark-border hover:border-brand-500 dark:hover:border-brand-500 px-4 sm:px-5 py-2.5 rounded-xl transition-all duration-300 font-medium group text-sm sm:text-base">
+                        <button @click="currentView = 'dashboard'" class="flex items-center gap-2 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-500 hover:text-white text-brand-600 dark:text-brand-400 border border-brand-500/20 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-300 font-bold group text-sm sm:text-base shadow-sm">
+                            <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                            <span class="hidden sm:inline">داشبورد</span>
+                        </button>
+
+                        <button @click="currentView = 'auth'" class="flex items-center gap-2 bg-white dark:bg-dark-card hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-dark-border hover:border-brand-500 dark:hover:border-brand-500 px-4 sm:px-5 py-2.5 rounded-xl transition-all duration-300 font-medium group text-sm sm:text-base">
                             <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
                             <span class="hidden sm:inline">ورود / ثبت‌نام</span>
                             <span class="sm:hidden">ورود</span>
@@ -122,6 +127,7 @@ export default {
                         </div>
                         <div class="flex-1 overflow-y-auto py-4 px-3 space-y-2">
                             <a href="#" @click.prevent="currentView = 'home'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">صفحه اصلی</a>
+                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-brand-600 dark:text-brand-400 bg-brand-50/50 dark:bg-brand-500/5 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors border border-brand-500/10">داشبورد کاربری</a>
                             <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">مجموعه ورزشی دارید؟</a>
                             <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">پیگیری خرید</a>
                             <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">سوالات متداول</a>
