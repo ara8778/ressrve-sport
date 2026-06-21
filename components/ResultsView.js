@@ -110,7 +110,21 @@ export default {
                     <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-sm leading-loose">متأسفانه برای فیلترهای انتخاب شده سالن ورزشی فعالی یافت نشد. لطفاً روز هفته یا نوع سالن ورزشی خود را تغییر دهید.</p>
                     <button @click="resetFilters" class="mt-6 bg-brand-500 hover:bg-brand-400 text-white dark:text-dark-bg font-bold px-6 py-2.5 rounded-xl transition-all duration-300">بازنشانی فیلترها</button>
                 </div>
-
+<!-- بنر هدایت به جستجوی پیشرفته -->
+<div class="glass-panel rounded-2xl p-6 mb-8 border-brand-500/30 bg-gradient-to-r from-brand-50/50 to-transparent dark:from-brand-500/5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-up">
+    <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 flex-shrink-0 shadow-glow-subtle">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+        </div>
+        <div>
+            <h4 class="text-base font-bold text-slate-800 dark:text-white mb-1">سالن مدنظرتو پیدا نکردی؟</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">با استفاده از جستجوی پیشرفته، دقیق‌تر فیلتر کن و سالن دلخواهت رو سریع‌تر پیدا کن.</p>
+        </div>
+    </div>
+    <button @click="currentView = 'pro-search'" class="w-full sm:w-auto whitespace-nowrap bg-brand-500 hover:bg-brand-400 text-white dark:text-dark-bg font-bold px-6 py-3 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:-translate-y-0.5 text-sm">
+        ورود به جستجوی پیشرفته
+    </button>
+</div>
                 <!-- بازگردانی کامل به چیدمان و استایل ۳ ستونه اورجینال نتایج جستجو -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <div v-for="(venue, index) in filteredVenues" :key="index"

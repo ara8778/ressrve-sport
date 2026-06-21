@@ -304,3 +304,8 @@ export const confirmBooking = () => {
     );
     closeBookingModal();
 };
+export const navigateToAdvancedSearch = () => {
+    // مطمئن شو کلمه‌ای که ست می‌کنی دقیقاً pro-search باشه
+store.currentView = 'pro-search';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};

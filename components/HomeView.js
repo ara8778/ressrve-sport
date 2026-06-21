@@ -202,10 +202,10 @@ export default {
                         </h2>
                         <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base pr-5 transition-colors duration-500">برخی از بهترین سالن‌های ورزشی ثبت شده با امکان رزرو مستقیم</p>
                     </div>
-                    <a href="#" @click.prevent="navigateToResults" class="hidden sm:flex items-center gap-1.5 text-brand-500 dark:text-brand-400 hover:text-brand-400 dark:hover:text-brand-300 font-bold transition-all group">
-                        مشاهده همه اماکن
-                        <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
-                    </a>
+<a href="#" @click.prevent="currentView = 'pro-search'" class="hidden sm:flex items-center gap-1.5 text-brand-500 dark:text-brand-400 hover:text-brand-400 dark:hover:text-brand-300 font-bold transition-all group">
+    مشاهده همه اماکن
+    <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+</a>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
