@@ -106,9 +106,8 @@
             <auth-view v-else-if="currentView === 'auth'" key="auth"></auth-view>
             <pro-search-view v-else-if="currentView === 'pro-search'"></pro-search-view>
             <venue-detail-view v-else-if="currentView === 'venue-detail'" key="venue-detail"></venue-detail-view>
-            <!-- اضافه شدن صفحه داشبورد -->
+            <!-- خطای بسته شدن تگ اینجا برطرف شد -->
             <dashboard-view v-else-if="currentView === 'dashboard'" key="dashboard"></dashboard-view>
->
         </transition>
     </div>
 
@@ -129,6 +128,7 @@
     import ToastList from './components/ToastList.js';
     import AppFooter from './components/AppFooter.js';
     import ProSearch from './components/ProSearch.js';
+    import RegisterVenue from './components/RegisterVenue.js';
 
     const { createApp, toRefs, onMounted } = window.Vue;
 
@@ -160,6 +160,7 @@
     app.component('toast-list', ToastList);
     app.component('app-footer', AppFooter);
     app.component('pro-search-view', ProSearch);
+    app.component('register-venue', RegisterVenue);
 
     app.mount('#app');
 </script>
