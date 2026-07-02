@@ -2,7 +2,7 @@ import { store, addNotification } from './store.js';
 
 export default {
     setup() {
-        const { ref, toRefs } = window.Vue;
+        const { ref, toRefs, computed, watch } = window.Vue;
 
         // مدیریت وضعیت تب‌های داشبورد (SPA Routing)
         const activeTab = ref('overview'); // overview | profile | security | venues | purchases | register
@@ -37,65 +37,208 @@ export default {
             status: 'فعال'
         });
 
-        // وضعیت هفتگی سالن
-        const weeklySchedule = ref([
-            { day: 'شنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۳:۰۰' },
-            { day: 'یکشنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۳:۰۰' },
-            { day: 'دوشنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۳:۰۰' },
-            { day: 'سه‌شنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۳:۰۰' },
-            { day: 'چهارشنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۳:۰۰' },
-            { day: 'پنج‌شنبه', isClosed: false, hours: '۰۸:۰۰ تا ۲۴:۰۰' },
-            { day: 'جمعه', isClosed: true, hours: 'تعطیل رسمی' },
-        ]);
+        // -----------------------------------------------------------------
+        // -- لاجیک بازطراحی شده تقویم ماهانه و مدیریت سانس‌های گام‌به‌گام --
+        // -----------------------------------------------------------------
 
-        // فرم بستن سانس خاص
-        const selectedClosingDay = ref('');
-        const selectedClosingTime = ref('');
+        const persianMonths = [
+            'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+            'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+        ];
+        
+        const weekdays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
+
+        // متغیرهای وضعیت تقویم ماهانه
+        const calendarYear = ref(1405);
+        const calendarMonthIndex = ref(3); // تیر ماه به عنوان پیش‌فرض
+        const selectedManageDay = ref(null); // روز انتخاب شده جهت نمایش سانس‌ها
+        const dayTimeslots = ref([]);
+
+        // محاسبه تعداد روزهای هر ماه در سال ۱۴۰۵
+        const getDaysInMonth = (monthIdx) => {
+            if (monthIdx < 6) return 31; // نیمه اول سال ۳۱ روزه
+            if (monthIdx < 11) return 30; // نیمه دوم سال ۳۰ روزه
+            return 29; // اسفند ۱۴۰۵ غیرکبیسه و ۲۹ روزه است
+        };
+
+        // تقریب شروع روزهای هفته در سال ۱۴۰۵ (۱ فروردین ۱۴۰۵ مصادف با جمعه است)
+        // این تابع اندیس شروع روز در گرید هفتگی (۰ برای شنبه تا ۶ برای جمعه) را بازمی‌گرداند
+        const getMonthStartWeekday = (monthIdx) => {
+            let totalDays = 0;
+            for (let i = 0; i < monthIdx; i++) {
+                totalDays += getDaysInMonth(i);
+            }
+            // اول فروردین جمعه (اندیس ۶) است.
+            return (6 + totalDays) % 7;
+        };
+
+        // روزهای ماه جاری برای نمایش در گرید
+        const currentMonthDays = computed(() => {
+            const daysCount = getDaysInMonth(calendarMonthIndex.value);
+            const startOffset = getMonthStartWeekday(calendarMonthIndex.value);
+            const daysArray = [];
+
+            // خانه‌های خالی ابتدای تقویم برای تراز شدن روزهای هفته
+            for (let i = 0; i < startOffset; i++) {
+                daysArray.push({ isPlaceholder: true });
+            }
+
+            // تولید روزهای واقعی ماه
+            for (let dayNum = 1; dayNum <= daysCount; dayNum++) {
+                const dayOfWeekIndex = (startOffset + dayNum - 1) % 7;
+                daysArray.push({
+                    isPlaceholder: false,
+                    dayNumber: dayNum,
+                    weekdayName: weekdays[dayOfWeekIndex],
+                    status: dayOfWeekIndex === 6 ? 'closed' : 'active', // جمعه‌ها تعطیل پیش‌فرض
+                    isToday: calendarMonthIndex.value === 3 && dayNum === 12 // شبیه‌سازی ۱۲ تیر به عنوان امروز
+                });
+            }
+
+            return daysArray;
+        });
+
+        // عنوان بالای تقویم (نام ماه و سال)
+        const currentMonthLabel = computed(() => {
+            return `${persianMonths[calendarMonthIndex.value]} ${calendarYear.value}`;
+        });
+
+        const goPrevMonth = () => {
+            selectedManageDay.value = null; // ریست وضعیت سانس انتخابی
+            if (calendarMonthIndex.value === 0) {
+                calendarMonthIndex.value = 11;
+                calendarYear.value--;
+            } else {
+                calendarMonthIndex.value--;
+            }
+        };
+
+        const goNextMonth = () => {
+            selectedManageDay.value = null;
+            if (calendarMonthIndex.value === 11) {
+                calendarMonthIndex.value = 0;
+                calendarYear.value++;
+            } else {
+                calendarMonthIndex.value++;
+            }
+        };
+
+        const selectDayForManage = (day) => {
+            if (day.isPlaceholder) return;
+            selectedManageDay.value = day;
+            
+            // شبیه‌سازی هوشمند سانس‌های روز انتخابی بر اساس زوج یا فرد بودن تاریخ یا تعطیلی روز
+            if (day.status === 'closed') {
+                dayTimeslots.value = [
+                    { id: 1, time: '۰۸:۰۰ تا ۰۹:۳۰', status: 'closed', reason: 'تعطیل رسمی هفتگی' },
+                    { id: 2, time: '۰۹:۳۰ تا ۱۱:۰۰', status: 'closed', reason: 'تعطیل رسمی هفتگی' },
+                    { id: 3, time: '۱۱:۰۰ تا ۱۲:۳۰', status: 'closed', reason: 'تعطیل رسمی هفتگی' },
+                    { id: 4, time: '۱۳:۰۰ تا ۱۴:۳۰', status: 'closed', reason: 'تعطیل رسمی هفتگی' },
+                    { id: 5, time: '۱۴:۳۰ تا ۱۶:۰۰', status: 'closed', reason: 'تعطیل رسمی هفتگی' }
+                ];
+            } else {
+                dayTimeslots.value = [
+                    { id: 1, time: '۰۸:۰۰ تا ۰۹:۳۰', status: 'free' },
+                    { id: 2, time: '۰۹:۳۰ تا ۱۱:۰۰', status: day.dayNumber % 2 === 0 ? 'booked' : 'free', user: 'علی محمدی' },
+                    { id: 3, time: '۱۱:۰۰ تا ۱۲:۳۰', status: day.dayNumber % 3 === 0 ? 'closed' : 'free', reason: 'سرویس ادواری سالن' },
+                    { id: 4, time: '۱۳:۰۰ تا ۱۴:۳۰', status: 'free' },
+                    { id: 5, time: '۱۴:۳۰ تا ۱۶:۰۰', status: 'free' },
+                    { id: 6, time: '۱۶:۰۰ تا ۱۷:۳۰', status: 'booked', user: 'علیرضا تقوی' },
+                    { id: 7, time: '۱۷:۳۰ تا ۱۹:۰۰', status: 'free' },
+                    { id: 8, time: '۱۹:۰۰ تا ۲۰:۳۰', status: 'free' },
+                    { id: 9, time: '۲۰:۳۰ تا ۲۲:۰۰', status: 'free' }
+                ];
+            }
+        };
+
+        // -----------------------------------------------------------------
+        // -- لاجیک بازطراحی فرم مسدودسازی با کامپوننت‌های سلکت سفارشی --
+        // -----------------------------------------------------------------
+
+        // وضعیت باز و بسته بودن دراپ‌دان‌های سفارشی فرم مسدودسازی
+        const activeDropdown = ref(''); // 'day' | 'month' | 'year' | 'time' | 'reason' | ''
+        
+        const closeForm = ref({
+            day: '',
+            month: '',
+            year: '۱۴۰۵',
+            time: '',
+            reason: ''
+        });
+
+        const closeReasons = ['تعمیرات', 'رزرو تلفنی', 'مسابقه', 'سرویس سالن', 'سایر'];
+        const availableSlotsForClose = [
+            '۰۸:۰۰ تا ۰۹:۳۰', '۰۹:۳۰ تا ۱۱:۰۰', '۱۱:۰۰ تا ۱۲:۳۰', 
+            '۱۳:۰۰ تا ۱۴:۳۰', '۱۴:۳۰ تا ۱۶:۰۰', '۱۶:۰۰ تا ۱۷:۳۰', 
+            '۱۷:۳۰ تا ۱۹:۰۰', '۱۹:۰۰ تا ۲۰:۳۰', '۲۰:۳۰ تا ۲۲:۰۰'
+        ];
+
+        // مانیتور کردن تغییر ماه جهت به‌روزرسانی روزهای معتبر فرم مسدودسازی
+        const closeFormDays = computed(() => {
+            if (!closeForm.value.month) return [];
+            const monthIdx = persianMonths.indexOf(closeForm.value.month);
+            const daysCount = getDaysInMonth(monthIdx);
+            return Array.from({ length: daysCount }, (_, i) => String(i + 1));
+        });
+
+        const toggleDropdown = (name) => {
+            if (activeDropdown.value === name) {
+                activeDropdown.value = '';
+            } else {
+                activeDropdown.value = name;
+            }
+        };
+
+        const selectDropdownValue = (field, val) => {
+            closeForm.value[field] = val;
+            activeDropdown.value = '';
+            // در صورت تغییر ماه، روز نامعتبر (مثلاً ۳۱ ام در ماه ۳۰ روزه) پاک شود
+            if (field === 'month') {
+                closeForm.value.day = '';
+            }
+        };
+
         const closingAnnouncements = ref([
             { id: 1, text: 'سانس ساعت ۱۴:۰۰ تا ۱۵:۳۰ روز پنج‌شنبه به علت سرویس دوره‌ای سالن بسته است.', date: '۱۴۰۵/۰۴/۰۲' }
         ]);
 
-        // درخواست‌های رزرو در انتظار بررسی (بیعانه یا پرداخت کامل)
-        const bookingRequests = ref([
-            { id: 101, userName: 'علیرضا تقوی', date: '۱۴۰۵/۰۴/۰۵', time: '۱۸:۰۰ تا ۱۹:۳۰', paymentType: 'بیعانه', paidAmount: '۲۵۰,۰۰۰', totalPrice: '۷۰۰,۰۰۰', phone: '09123456789' },
-            { id: 102, userName: 'مرتضی هاشمی', date: '۱۴۰۵/۰۴/۰۶', time: '۲۰:۰۰ تا ۲۱:۳۰', paymentType: 'پرداخت کامل', paidAmount: '۷۵۰,۰۰۰', totalPrice: '۷۵۰,۰۰۰', phone: '09198765432' }
-        ]);
-
-        // سوئیچ باز/بسته کردن کل روز
-        const toggleDayStatus = (index) => {
-            weeklySchedule.value[index].isClosed = !weeklySchedule.value[index].isClosed;
-            if (weeklySchedule.value[index].isClosed) {
-                weeklySchedule.value[index].hours = 'تعطیل';
-                addNotification('بروزرسانی روز کاری', `سالن در روز ${weeklySchedule.value[index].day} تعطیل اعلام شد.`, 'info');
-            } else {
-                weeklySchedule.value[index].hours = '۰۸:۰۰ تا ۲۳:۰۰';
-                addNotification('بروزرسانی روز کاری', `سالن در روز ${weeklySchedule.value[index].day} مجدداً فعال شد.`, 'success');
-            }
-        };
-
-        // مسدود کردن ساعت یا سانس خاص
-        const addClosingTime = () => {
-            if (!selectedClosingDay.value || !selectedClosingTime.value) {
-                addNotification('خطا', 'لطفاً روز و ساعت مورد نظر جهت مسدودسازی را مشخص کنید.', 'error');
+        const submitCloseSlot = () => {
+            const { day, month, year, time, reason } = closeForm.value;
+            if (!day || !month || !year || !time || !reason) {
+                addNotification('خطا', 'لطفاً تمامی فیلدها را با کلیک روی آنها انتخاب کنید.', 'error');
                 return;
             }
             closingAnnouncements.value.push({
                 id: Date.now(),
-                text: `سانس ساعت ${selectedClosingTime.value} در روز ${selectedClosingDay.value} توسط مدیریت بسته شد.`,
-                date: 'امروز'
+                text: `سانس ${time} در تاریخ ${day} ${month} ${year} به علت "${reason}" توسط مدیریت مسدود شد.`,
+                date: 'همین الان'
             });
-            addNotification('محدودیت اعمال شد', `ساعت ${selectedClosingTime.value} در روز ${selectedClosingDay.value} با موفقیت بسته شد.`, 'success');
-            selectedClosingDay.value = '';
-            selectedClosingTime.value = '';
+            addNotification('محدودیت اعمال شد', 'سانس انتخاب شده با موفقیت مسدود گردید.', 'success');
+            
+            // ریست فرم
+            closeForm.value = {
+                day: '',
+                month: '',
+                year: '۱۴۰۵',
+                time: '',
+                reason: ''
+            };
         };
 
-        // حذف محدودیت سانس
         const removeClosingTime = (id) => {
             closingAnnouncements.value = closingAnnouncements.value.filter(item => item.id !== id);
             addNotification('حذف محدودیت', 'سانس مورد نظر مجدداً بازگشایی شد.', 'success');
         };
 
-        // تایید یا رد درخواست‌های سانس کاربران
+        // ----------------------------------------------------
+
+        // درخواست‌های رزرو در انتظار بررسی (بیعانه یا پرداخت کامل) - بدون تغییر
+        const bookingRequests = ref([
+            { id: 101, userName: 'علیرضا تقوی', date: '۱۴۰۵/۰۴/۰۵', time: '۱۸:۰۰ تا ۱۹:۳۰', paymentType: 'بیعانه', paidAmount: '۲۵۰,۰۰۰', totalPrice: '۷۰۰,۰۰۰', phone: '09123456789' },
+            { id: 102, userName: 'مرتضی هاشمی', date: '۱۴۰۵/۰۴/۰۶', time: '۲۰:۰۰ تا ۲۱:۳۰', paymentType: 'پرداخت کامل', paidAmount: '۷۵۰,۰۰۰', totalPrice: '۷۵۰,۰۰۰', phone: '09198765432' }
+        ]);
+
+        // تایید یا رد درخواست‌های سانس کاربران - بدون تغییر
         const handleRequestAction = (id, action) => {
             const req = bookingRequests.value.find(r => r.id === id);
             if (req) {
@@ -108,13 +251,13 @@ export default {
             }
         };
 
-        // عملیات خروج از حساب
+        // عملیات خروج از حساب - بدون تغییر
         const handleLogout = () => {
             store.currentView = 'home';
             addNotification('خروج موفقیت‌آمیز', 'شما با موفقیت از سیستم خارج شدید.', 'success');
         };
 
-        // عملیات شارژ کیف پول
+        // عملیات شارژ کیف پول - بدون تغییر
         const handleChargeWallet = () => {
             const finalAmount = customAmount.value || selectedAmount.value;
             if (!finalAmount) {
@@ -127,24 +270,24 @@ export default {
             customAmount.value = '';
         };
 
-        // تنظیم مبلغ انتخابی برای مودال
+        // تنظیم مبلغ انتخابی برای مودال - بدون تغییر
         const selectAmount = (amount) => {
             selectedAmount.value = amount;
             customAmount.value = '';
         };
 
-        // انتخاب شهر از دراپ داون کاستوم
+        // انتخاب شهر از دراپ داون کاستوم - بدون تغییر
         const selectCity = (city) => {
             selectedCity.value = city;
             isCityDropdownOpen.value = false;
         };
 
-        // بستن دراپ‌داون در صورت کلیک در بیرون
+        // بستن دراپ‌داون در صورت کلیک در بیرون - بدون تغییر
         const closeCityDropdown = () => {
             isCityDropdownOpen.value = false;
         };
 
-        // ذخیره تغییرات (شبیه‌سازی)
+        // ذخیره تغییرات (شبیه‌سازی) - بدون تغییر
         const saveChanges = (type) => {
             const msgs = {
                 'profile': 'اطلاعات کاربری شما با موفقیت بروزرسانی شد.',
@@ -153,7 +296,7 @@ export default {
             addNotification('عملیات موفق', msgs[type], 'success');
         };
 
-        // اتمام ثبت سالن و بازگشت به داشبورد
+        // اتمام ثبت سالن و بازگشت به داشبورد - بدون تغییر
         const handleRegistrationComplete = () => {
             userVenueStatus.value = 'pending';
             activeTab.value = 'venues';
@@ -179,17 +322,34 @@ export default {
             saveChanges,
             handleRegistrationComplete,
             
-            // اکسپوز دیتای جدید مدیریت سالن
+            // اکسپوز دیتای بازطراحی شده تقویم و پنل مدیریت
             showManagementPanel,
             userVenue,
-            weeklySchedule,
-            selectedClosingDay,
-            selectedClosingTime,
+            calendarYear,
+            calendarMonthIndex,
+            currentMonthDays,
+            currentMonthLabel,
+            selectedManageDay,
+            dayTimeslots,
+            goPrevMonth,
+            goNextMonth,
+            selectDayForManage,
+            
+            // فیلدهای فرم جدید مسدودسازی سانس
+            activeDropdown,
+            closeForm,
+            persianMonths,
+            closeFormDays,
+            closeReasons,
+            availableSlotsForClose,
             closingAnnouncements,
-            bookingRequests,
-            toggleDayStatus,
-            addClosingTime,
+            toggleDropdown,
+            selectDropdownValue,
+            submitCloseSlot,
             removeClosingTime,
+            
+            // درخواست‌ها
+            bookingRequests,
             handleRequestAction
         };
     },
@@ -427,10 +587,10 @@ export default {
                                         <h3 class="text-2xl font-black text-slate-800 dark:text-white">مدیریت سالن‌های من</h3>
                                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">سالن ثبت‌شده خود را مدیریت کنید یا سالن جدیدی اضافه نمایید.</p>
                                     </div>
-<button @click="activeTab = 'register'" class="bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white font-black py-3 px-6 rounded-xl shadow-glow transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-    افزودن سالن
-</button>
+                                    <button @click="activeTab = 'register'" class="bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white font-black py-3 px-6 rounded-xl shadow-glow transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                                        افزودن سالن
+                                    </button>
                                 </div>
 
                                 <!-- حالت در انتظار تایید -->
@@ -445,11 +605,11 @@ export default {
                                     </p>
                                 </div>
 
-                                <!-- کارت عرضی لوکس نمایش مشخصات سالن (فقط در حالت تایید شده نشان داده می‌شود) -->
+                                <!-- کارت عرضی نمایش مشخصات سالن -->
                                 <div v-if="userVenueStatus === 'active'" @click="showManagementPanel = !showManagementPanel" 
                                      class="glass-panel rounded-[2rem] p-6 shadow-xl border border-slate-200 dark:border-white/10 hover:border-brand-500/50 cursor-pointer transition-all duration-300 hover:shadow-glow-subtle flex flex-col md:flex-row items-center gap-6 group relative overflow-hidden">
                                     
-                                    <!-- افکت نوری پس‌زمینه کارت در فوکوس -->
+                                    <!-- افکت نوری پس‌زمینه کارت -->
                                     <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-brand-500/5 rounded-full blur-2xl group-hover:bg-brand-500/10 transition-all duration-500"></div>
 
                                     <!-- تصویر سالن -->
@@ -462,7 +622,7 @@ export default {
                                         </span>
                                     </div>
 
-                                    <!-- جزئیات متنی سالن به صورت عرضی -->
+                                    <!-- جزئیات متنی سالن -->
                                     <div class="flex-1 w-full text-center md:text-right space-y-2">
                                         <h4 class="text-xl font-black text-slate-800 dark:text-white group-hover:text-brand-500 transition-colors">{{ userVenue.name }}</h4>
                                         <p class="text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center md:justify-start gap-1">
@@ -484,83 +644,281 @@ export default {
                                     </div>
                                 </div>
 
-                                <!-- پنل مدیریت سالن (بستن ساعت‌ها و روزها + تایید سانس‌ها) -->
+                                <!-- پنل مدیریت سالن بازطراحی شده -->
                                 <transition name="fade-slide">
                                     <div v-if="showManagementPanel && userVenueStatus === 'active'" class="space-y-6 animate-fade-up">
                                         
-                                        <!-- بخش اول: زمان‌بندی هفتگی و مسدودسازی سانس -->
-                                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <!-- بخش اول: تقویم مدیریت سانس‌های ماهانه با طراحی فوق پرمیوم -->
+                                        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 shadow-lg border border-slate-200 dark:border-white/10 space-y-6">
                                             
-                                            <!-- لیست روزهای هفته و وضعیت باز/بسته عمومی -->
-                                            <div class="lg:col-span-2 glass-panel rounded-3xl p-6 shadow-lg border border-slate-200 dark:border-white/10 space-y-4">
-                                                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
-                                                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                    <h5 class="font-black text-slate-800 dark:text-white">وضعیت روزهای کاری هفته</h5>
+                                            <!-- هدر تقویم و سوییچر ماه‌ها -->
+                                            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-white/5 pb-4">
+                                                <div class="flex items-center gap-2">
+                                                    <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                    <h5 class="font-black text-slate-800 dark:text-white text-lg">تقویم مدیریت سانس‌ها</h5>
                                                 </div>
-                                                
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div v-for="(item, idx) in weeklySchedule" :key="idx" 
-                                                         class="flex items-center justify-between p-3.5 rounded-xl border transition-colors"
-                                                         :class="item.isClosed ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-50/50 dark:bg-dark-bg/30 border-slate-100 dark:border-white/5'">
-                                                        <div class="flex items-center gap-2.5">
-                                                            <span class="w-2.5 h-2.5 rounded-full" :class="item.isClosed ? 'bg-red-500' : 'bg-emerald-500'"></span>
-                                                            <span class="font-bold text-slate-700 dark:text-slate-200">{{ item.day }}</span>
-                                                            <span class="text-xs text-slate-400 font-medium">({{ item.hours }})</span>
+
+                                                <!-- Month/Year Navigator -->
+                                                <div class="flex items-center bg-slate-100/50 dark:bg-dark-bg/50 rounded-xl p-1.5 border border-slate-200/60 dark:border-white/5">
+                                                    <button @click="goPrevMonth" class="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all flex items-center text-slate-500 dark:text-slate-400 hover:text-brand-500 shadow-sm">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                    </button>
+                                                    <span class="px-6 font-bold text-base text-slate-800 dark:text-slate-200 min-w-[150px] text-center">{{ currentMonthLabel }}</span>
+                                                    <button @click="goNextMonth" class="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all flex items-center text-slate-500 dark:text-slate-400 hover:text-brand-500 shadow-sm">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- گرید اصلی تقویم ماهانه -->
+                                            <transition name="fade-slide" mode="out-in">
+                                                <div v-if="!selectedManageDay" key="month-view" class="space-y-4">
+                                                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        جهت مشاهده، تخصیص وضعیت یا لغو و مسدودسازی سانس‌های هر روز، لطفا روی خانه آن روز در جدول زیر کلیک کنید.
+                                                    </p>
+                                                    
+                                                    <!-- روزهای هفته به عنوان راهنمای ستون‌ها -->
+                                                    <div class="grid grid-cols-7 gap-2 text-center border-b border-slate-100 dark:border-white/5 pb-2">
+                                                        <span v-for="w in weekdays" :key="w" class="text-xs font-bold text-slate-400 dark:text-slate-500">{{ w.substring(0, 3) }}</span>
+                                                    </div>
+
+                                                    <!-- خانه روزهای ماه -->
+                                                    <div class="grid grid-cols-7 gap-2.5">
+                                                        <div v-for="(day, idx) in currentMonthDays" :key="idx"
+                                                             @click="!day.isPlaceholder && selectDayForManage(day)"
+                                                             class="aspect-square rounded-2xl p-2 flex flex-col items-center justify-between border transition-all duration-300 relative group"
+                                                             :class="[
+                                                                 day.isPlaceholder ? 'opacity-0 cursor-default pointer-events-none' : 'cursor-pointer hover:-translate-y-1 hover:shadow-glow-subtle',
+                                                                 day.isToday ? 'bg-gradient-to-tr from-brand-500 to-cyan-500 text-white border-transparent ring-4 ring-brand-500/20' : 'bg-slate-50/40 dark:bg-dark-bg/20 border-slate-200 dark:border-white/10 hover:border-brand-500/50',
+                                                                 day.status === 'closed' && !day.isToday ? 'border-red-500/20 hover:border-red-500/40' : ''
+                                                             ]">
+                                                            
+                                                             <!-- شماره روز -->
+                                                             <span v-if="!day.isPlaceholder" 
+                                                                   class="text-base font-black"
+                                                                   :class="day.isToday ? 'text-white' : 'text-slate-800 dark:text-slate-100'">
+                                                                 {{ day.dayNumber }}
+                                                             </span>
+                                                             
+                                                             <!-- نشانگر وضعیت روز -->
+                                                             <div v-if="!day.isPlaceholder" class="flex items-center gap-1">
+                                                                 <span class="w-1.5 h-1.5 rounded-full shadow-sm" 
+                                                                       :class="day.status === 'closed' ? 'bg-red-500 shadow-red-500/50' : 'bg-emerald-500 shadow-emerald-500/50'">
+                                                                 </span>
+                                                                 <span class="text-[9px] font-bold hidden sm:inline" 
+                                                                       :class="day.isToday ? 'text-white/90' : (day.status === 'closed' ? 'text-red-500' : 'text-emerald-500')">
+                                                                     {{ day.status === 'closed' ? 'تعطیل' : 'فعال' }}
+                                                                 </span>
+                                                             </div>
+
+                                                             <!-- برچسب امروز -->
+                                                             <span v-if="day.isToday" class="absolute -top-1.5 -left-1.5 bg-yellow-400 text-slate-900 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">امروز</span>
                                                         </div>
-                                                        <button @click="toggleDayStatus(idx)" 
-                                                                :class="item.isClosed ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'"
-                                                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105">
-                                                            {{ item.isClosed ? 'باز کردن روز' : 'تعطیل کردن روز' }}
+                                                    </div>
+                                                </div>
+
+                                                <!-- نمای تفصیلی سانس‌های روز انتخاب شده -->
+                                                <div v-else key="day-view" class="space-y-4">
+                                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-brand-50 dark:bg-brand-500/10 p-4 rounded-2xl border border-brand-500/20">
+                                                        <div>
+                                                            <h6 class="font-black text-brand-800 dark:text-brand-400 text-sm">
+                                                                برنامه زمان‌بندی و وضعیت سانس‌ها
+                                                            </h6>
+                                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                                سانس‌های روز {{ selectedManageDay.weekdayName }} {{ selectedManageDay.dayNumber }} {{ currentMonthLabel }}
+                                                            </p>
+                                                        </div>
+                                                        <button @click="selectedManageDay = null" class="w-full sm:w-auto text-xs font-bold text-brand-600 dark:text-brand-400 hover:bg-white dark:hover:bg-dark-bg px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm border border-brand-500/10 hover:scale-[1.02]">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                                            بازگشت به تقویم ماهانه
                                                         </button>
                                                     </div>
-                                                </div>
-                                            </div>
 
-                                            <!-- فرم مسدود کردن ساعت یا سانس خاص -->
-                                            <div class="glass-panel rounded-3xl p-6 shadow-lg border border-slate-200 dark:border-white/10 flex flex-col justify-between">
-                                                <div>
-                                                    <div class="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3 mb-4">
-                                                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                                                        <h5 class="font-black text-slate-800 dark:text-white">بستن موقت سانس خاص</h5>
-                                                    </div>
-                                                    <p class="text-xs text-slate-400 mb-4">جهت بستن اضطراری یا رزرو تلفنی ساعت‌های خاص از فرم زیر استفاده کنید.</p>
-                                                    
-                                                    <div class="space-y-4">
-                                                        <div>
-                                                            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">انتخاب روز</label>
-                                                            <input type="text" v-model="selectedClosingDay" placeholder="مثلاً: پنج‌شنبه این هفته" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500">
-                                                        </div>
-                                                        <div>
-                                                            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">انتخاب محدوده ساعت</label>
-                                                            <input type="text" v-model="selectedClosingTime" placeholder="مثلاً: ۱۶:۰۰ تا ۱۷:۳۰" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-left dir-ltr">
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                        <div v-for="slot in dayTimeslots" :key="slot.id"
+                                                             class="p-4 rounded-2xl border flex flex-col gap-2.5 transition-all relative overflow-hidden group hover:shadow-md"
+                                                             :class="{
+                                                                 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-500/5': slot.status === 'free',
+                                                                 'border-red-200 dark:border-red-500/20 bg-red-50/20 dark:bg-red-500/5': slot.status === 'booked',
+                                                                 'border-slate-200 dark:border-slate-600/30 bg-slate-100/50 dark:bg-slate-800/30': slot.status === 'closed'
+                                                             }">
+                                                             <div class="flex items-center justify-between relative z-10">
+                                                                 <span class="font-black text-slate-800 dark:text-white dir-ltr text-right tracking-wider text-sm">{{ slot.time }}</span>
+                                                                 <span class="text-[10px] px-2.5 py-1 rounded-lg font-black flex items-center gap-1"
+                                                                       :class="{
+                                                                           'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400': slot.status === 'free',
+                                                                           'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400': slot.status === 'booked',
+                                                                           'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300': slot.status === 'closed'
+                                                                       }">
+                                                                       <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="slot.status === 'free' ? 'bg-emerald-500' : slot.status === 'booked' ? 'bg-red-500' : 'bg-slate-500'"></span>
+                                                                       {{ slot.status === 'free' ? 'آزاد' : slot.status === 'booked' ? 'رزرو شده' : 'بسته شده' }}
+                                                                 </span>
+                                                             </div>
+                                                             <div v-if="slot.status === 'booked'" class="text-xs text-red-600/80 dark:text-red-400/80 font-bold mt-0.5 relative z-10 flex items-center gap-1.5">
+                                                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                                                رزرو شده توسط: {{ slot.user }}
+                                                             </div>
+                                                             <div v-if="slot.status === 'closed'" class="text-xs text-slate-500 dark:text-slate-400 font-bold mt-0.5 relative z-10 flex items-center gap-1.5">
+                                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                                علت مسدودسازی: {{ slot.reason }}
+                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
-                                                <button @click="addClosingTime" class="w-full mt-4 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl transition-all shadow-glow-subtle flex items-center justify-center gap-1.5 text-sm">
-                                                    اعمال محدودیت و بستن سانس
-                                                </button>
-                                            </div>
-
+                                            </transition>
                                         </div>
 
-                                        <!-- لیست محدودیت‌های اعمال شده اضطراری -->
-                                        <div v-if="closingAnnouncements.length > 0" class="glass-panel rounded-3xl p-6 shadow-lg border border-slate-200 dark:border-white/10 space-y-3">
-                                            <h6 class="text-sm font-bold text-slate-700 dark:text-slate-300">سانس‌های بسته شده جاری:</h6>
-                                            <div class="space-y-2">
-                                                <div v-for="ann in closingAnnouncements" :key="ann.id" class="flex items-center justify-between p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs">
-                                                    <div class="flex items-center gap-2 text-slate-700 dark:text-amber-300">
-                                                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                                        <span>{{ ann.text }}</span>
+                                        <!-- بخش دوم: فرم جدید و بسیار لوکس مسدودسازی اضطراری سانس با فیلدهای سه‌گانه مجزا -->
+                                        <div class="glass-panel rounded-[2rem] p-6 lg:p-8 shadow-lg border border-slate-200 dark:border-white/10 space-y-6">
+                                            <div class="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
+                                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                                <h5 class="font-black text-slate-800 dark:text-white">بستن موقت و محدودسازی سانس‌ها</h5>
+                                            </div>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                در صورت نیاز به کارهای فنی سالن، رزروهای سنتی تلفنی یا مسابقات خاص، می‌توانید با استفاده از بخش زیر هر کدام از سانس‌ها را غیرفعال کنید.
+                                            </p>
+
+                                            <!-- فیلدهای سه‌گانه مجزای انتخاب تاریخ با دراپ‌داون پرمیوم سفارشی -->
+                                            <div class="space-y-4">
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300">تاریخ مسدودسازی سانس</label>
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    
+                                                    <!-- انتخاب سال -->
+                                                    <div class="relative">
+                                                        <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">سال</span>
+                                                        <div @click="toggleDropdown('year')" 
+                                                             class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500"
+                                                             :class="{'border-brand-500 ring-2 ring-brand-500/20': activeDropdown === 'year'}">
+                                                            <span class="font-bold">{{ closeForm.year || 'انتخاب سال...' }}</span>
+                                                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeDropdown === 'year'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                        </div>
+                                                        <transition name="dropdown">
+                                                            <div v-if="activeDropdown === 'year'" class="absolute left-0 right-0 mt-1.5 bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-40 overflow-y-auto">
+                                                                <div v-for="y in ['۱۴۰۴', '۱۴۰۵', '۱۴۰۶']" :key="y"
+                                                                     @click="selectDropdownValue('year', y)"
+                                                                     class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors">
+                                                                    {{ y }}
+                                                                </div>
+                                                            </div>
+                                                        </transition>
                                                     </div>
-                                                    <button @click="removeClosingTime(ann.id)" class="text-red-500 hover:text-red-600 font-bold px-2 py-1 bg-red-500/10 rounded-md transition-colors">
+
+                                                    <!-- انتخاب ماه -->
+                                                    <div class="relative">
+                                                        <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">ماه</span>
+                                                        <div @click="toggleDropdown('month')" 
+                                                             class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500"
+                                                             :class="{'border-brand-500 ring-2 ring-brand-500/20': activeDropdown === 'month'}">
+                                                            <span class="font-bold">{{ closeForm.month || 'انتخاب ماه...' }}</span>
+                                                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeDropdown === 'month'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                        </div>
+                                                        <transition name="dropdown">
+                                                            <div v-if="activeDropdown === 'month'" class="absolute left-0 right-0 mt-1.5 bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                                <div v-for="m in persianMonths" :key="m"
+                                                                     @click="selectDropdownValue('month', m)"
+                                                                     class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors">
+                                                                    {{ m }}
+                                                                </div>
+                                                            </div>
+                                                        </transition>
+                                                    </div>
+
+                                                    <!-- انتخاب روز -->
+                                                    <div class="relative">
+                                                        <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">روز</span>
+                                                        <div @click="closeForm.month ? toggleDropdown('day') : addNotification('هشدار', 'لطفاً ابتدا ماه را انتخاب کنید.', 'info')" 
+                                                             class="w-full border text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between transition-colors"
+                                                             :class="[
+                                                                 closeForm.month ? 'bg-slate-50/70 dark:bg-dark-bg/60 border-slate-200 dark:border-white/10 cursor-pointer hover:border-brand-500' : 'bg-slate-100/50 dark:bg-dark-bg/20 border-slate-200 dark:border-white/5 cursor-not-allowed opacity-60',
+                                                                 activeDropdown === 'day' ? 'border-brand-500 ring-2 ring-brand-500/20' : ''
+                                                             ]">
+                                                            <span class="font-bold">{{ closeForm.day || 'انتخاب روز...' }}</span>
+                                                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeDropdown === 'day'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                        </div>
+                                                        <transition name="dropdown">
+                                                            <div v-if="activeDropdown === 'day' && closeFormDays.length > 0" class="absolute left-0 right-0 mt-1.5 bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                                <div v-for="d in closeFormDays" :key="d"
+                                                                     @click="selectDropdownValue('day', d)"
+                                                                     class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors">
+                                                                    {{ d }}
+                                                                </div>
+                                                            </div>
+                                                        </transition>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            <!-- انتخاب سانس و علت مسدودسازی با منوهای پرمیوم سفارشی -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                
+                                                <!-- انتخاب سانس -->
+                                                <div class="relative">
+                                                    <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">انتخاب محدوده سانس</span>
+                                                    <div @click="toggleDropdown('time')" 
+                                                         class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500"
+                                                         :class="{'border-brand-500 ring-2 ring-brand-500/20': activeDropdown === 'time'}">
+                                                        <span class="font-bold dir-ltr tracking-wide text-right w-full block">{{ closeForm.time || 'انتخاب سانس زمانی...' }}</span>
+                                                        <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeDropdown === 'time'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                    <transition name="dropdown">
+                                                        <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-1.5 bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                            <div v-for="t in availableSlotsForClose" :key="t"
+                                                                 @click="selectDropdownValue('time', t)"
+                                                                 class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors dir-ltr text-right">
+                                                                {{ t }}
+                                                            </div>
+                                                        </div>
+                                                    </transition>
+                                                </div>
+
+                                                <!-- علت مسدودسازی -->
+                                                <div class="relative">
+                                                    <span class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">علت مسدودسازی</span>
+                                                    <div @click="toggleDropdown('reason')" 
+                                                         class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500"
+                                                         :class="{'border-brand-500 ring-2 ring-brand-500/20': activeDropdown === 'reason'}">
+                                                        <span class="font-bold">{{ closeForm.reason || 'انتخاب علت...' }}</span>
+                                                        <svg class="w-4 h-4 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeDropdown === 'reason'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                    <transition name="dropdown">
+                                                        <div v-if="activeDropdown === 'reason'" class="absolute left-0 right-0 mt-1.5 bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                            <div v-for="r in closeReasons" :key="r"
+                                                                 @click="selectDropdownValue('reason', r)"
+                                                                 class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors">
+                                                                {{ r }}
+                                                            </div>
+                                                        </div>
+                                                    </transition>
+                                                </div>
+
+                                            </div>
+
+                                            <div class="flex justify-end pt-2">
+                                                <button @click="submitCloseSlot" class="w-full sm:w-auto px-8 bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-glow hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                    ثبت و اعمال مسدودسازی سانس
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- لیست محدودیت‌های اعمال شده اضطراری جاری -->
+                                        <div v-if="closingAnnouncements.length > 0" class="glass-panel rounded-[2rem] p-6 shadow-lg border border-slate-200 dark:border-white/10 space-y-3">
+                                            <h6 class="text-sm font-bold text-slate-700 dark:text-slate-300">سانس‌های مسدود شده فعال جاری:</h6>
+                                            <div class="space-y-2.5">
+                                                <div v-for="ann in closingAnnouncements" :key="ann.id" class="flex items-center justify-between p-3.5 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs transition-colors hover:bg-amber-500/10">
+                                                    <div class="flex items-center gap-2 text-slate-700 dark:text-amber-300">
+                                                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                                        <span class="font-bold leading-relaxed">{{ ann.text }}</span>
+                                                    </div>
+                                                    <button @click="removeClosingTime(ann.id)" class="text-red-500 hover:text-red-600 font-bold px-3.5 py-1.5 bg-red-500/10 rounded-lg transition-colors whitespace-nowrap shrink-0">
                                                         حذف و بازگشایی
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- بخش دوم: بررسی درخواست‌های تایید سانس کاربری (پرداخت کامل / بیعانه) -->
+                                        <!-- بخش سوم: بررسی درخواست‌های تایید سانس کاربری (پرداخت کامل / بیعانه) - بدون تغییر -->
                                         <div class="glass-panel rounded-3xl p-6 shadow-lg border border-slate-200 dark:border-white/10 space-y-4">
                                             <div class="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
                                                 <div class="flex items-center gap-2">
@@ -667,10 +1025,9 @@ export default {
                             </div>
                             
                             <!-- TAB: Register (فرم ثبت سالن) -->
-<!-- TAB: Register (فرم ثبت سالن) -->
-<div v-else-if="activeTab === 'register'" key="register" class="animate-fade-up">
-    <register-venue @completed="handleRegistrationComplete"></register-venue>
-</div>
+                            <div v-else-if="activeTab === 'register'" key="register" class="animate-fade-up">
+                                <register-venue @completed="handleRegistrationComplete"></register-venue>
+                            </div>
 
                         </transition>
                     </main>
