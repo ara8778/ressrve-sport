@@ -46,12 +46,10 @@ export default {
                     </div>
 
                     <div class="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300">
-                        <a href="#" @click.prevent="currentView = 'home'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'home'}">
-                            صفحه اصلی
-                        </a>
                         <a href="#" @click.prevent="currentView = 'dashboard'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">مجموعه ورزشی دارید؟</a>
-                        <!-- این گزینه رو اضافه کردم و متصلش کردم به صفحه درباره ما -->
                         <a href="#" @click.prevent="currentView = 'about'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'about'}">درباره ما</a>
+                        <!-- لینک داینامیک سوالات متداول در بخش دسکتاپ -->
+                        <a href="#" @click.prevent="currentView = 'faq'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'faq'}">سوالات متداول</a>
                         <a href="#" @click.prevent="currentView = 'contact'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'contact'}">تماس با ما</a>
                     </div>
 
@@ -64,7 +62,7 @@ export default {
 
                         <div class="relative hidden sm:block" @click.stop>
                             <button @click="toggleNotifications" class="text-slate-500 dark:text-slate-300 hover:text-brand-500 dark:hover:text-brand-400 duration-700 transition-colors relative p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/5">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5 nudge-left-5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                                 <span v-if="unreadNotifications > 0" class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-dark-bg"></span>
                             </button>
 
@@ -128,9 +126,10 @@ export default {
                         </div>
                         <div class="flex-1 overflow-y-auto py-4 px-3 space-y-2">
                             <a href="#" @click.prevent="currentView = 'home'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">صفحه اصلی</a>
-                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-brand-600 dark:text-brand-400 bg-brand-50/50 dark:bg-brand-500/5 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors border border-brand-500/10">داشبورد کاربری</a>
                             <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">مجموعه ورزشی دارید؟</a>
                             <a href="#" @click.prevent="currentView = 'about'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">درباره ما</a>
+                            <!-- لینک داینامیک سوالات متداول در بخش موبایل -->
+                            <a href="#" @click.prevent="currentView = 'faq'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">سوالات متداول</a>
                             <a href="#" @click.prevent="currentView = 'contact'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">تماس با ما</a>
                             
                             <div class="my-4 border-t border-slate-100 dark:border-white/5"></div>

@@ -27,7 +27,6 @@ export default {
                     <div>
                         <h4 class="text-slate-800 dark:text-white font-bold mb-6 transition-colors duration-500">اطلاعات</h4>
                         <ul class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
-                            <!-- لینک درباره ما متصل شد -->
                             <li><a href="#" @click.prevent="currentView = 'about'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">درباره ما</a></li>
                             <li><a href="#" @click.prevent="currentView = 'dashboard'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">داشبورد کاربری</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">قوانین و مقررات</a></li>
@@ -39,8 +38,8 @@ export default {
                         <h4 class="text-slate-800 dark:text-white font-bold mb-6 transition-colors duration-500">کاربران</h4>
                         <ul class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
                             <li><a href="#" @click.prevent="currentView = 'dashboard'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">ثبت مکان ورزشی</a></li>
-                            <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">سوالات متداول</a></li>
-                            <!-- لینک تماس با ما متصل شد -->
+                            <!-- لینک استاتیک قبلی برداشته شد و به صورت داینامیک متصل شد به کامپوننت سوالات متداول -->
+                            <li><a href="#" @click.prevent="currentView = 'faq'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">سوالات متداول</a></li>
                             <li><a href="#" @click.prevent="currentView = 'contact'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">تماس با ما</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">فرایند خرید</a></li>
                         </ul>

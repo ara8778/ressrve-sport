@@ -110,6 +110,7 @@
             <!-- این خط رو اضافه کن -->
             <contact-view v-else-if="currentView === 'contact'" key="contact"></contact-view> 
             <about-view v-else-if="currentView === 'about'" key="about"></about-view>
+            <faq-view v-else-if="currentView === 'faq'" key="faq"></faq-view>
         </transition>
     </div>
 
@@ -133,7 +134,7 @@
     import RegisterVenue from './components/RegisterVenue.js';
     import ContactView from './components/ContactView.js';
     import AboutView from './components/AboutView.js';
-
+    import Faq from './components/Faq.js';
 
 
     const { createApp, toRefs, onMounted } = window.Vue;
@@ -169,7 +170,7 @@
     app.component('register-venue', RegisterVenue);
     app.component('contact-view', ContactView);
     app.component('about-view', AboutView);
-
+    app.component('faq-view', Faq);
 
     app.mount('#app');
 </script>
