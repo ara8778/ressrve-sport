@@ -49,7 +49,7 @@ export default {
                         <a href="#" @click.prevent="currentView = 'home'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'home'}">
                             صفحه اصلی
                         </a>
-                        <a href="#" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">مجموعه ورزشی دارید؟</a>
+                        <a href="#" @click.prevent="currentView = 'dashboard'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">مجموعه ورزشی دارید؟</a>
                         <a href="#" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">پیگیری خرید</a>
                         <a href="#" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">سوالات متداول</a>
                     </div>
@@ -127,8 +127,7 @@ export default {
                         </div>
                         <div class="flex-1 overflow-y-auto py-4 px-3 space-y-2">
                             <a href="#" @click.prevent="currentView = 'home'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">صفحه اصلی</a>
-                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-brand-600 dark:text-brand-400 bg-brand-50/50 dark:bg-brand-500/5 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors border border-brand-500/10">داشبورد کاربری</a>
-                            <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">مجموعه ورزشی دارید؟</a>
+                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">مجموعه ورزشی دارید؟</a>
                             <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">پیگیری خرید</a>
                             <a href="#" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">سوالات متداول</a>
                             

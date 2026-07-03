@@ -1,4 +1,12 @@
+import { store } from './store.js';
+
 export default {
+    setup() {
+        const { toRefs } = window.Vue;
+        return { 
+            ...toRefs(store) 
+        };
+    },
     template: `
         <footer class="bg-slate-100 dark:bg-[#03060d] border-t border-slate-200 dark:border-dark-border pt-16 pb-8 mt-auto relative z-10 transition-colors duration-500">
             <div class="container mx-auto px-4">
@@ -19,8 +27,8 @@ export default {
                     <div>
                         <h4 class="text-slate-800 dark:text-white font-bold mb-6 transition-colors duration-500">اطلاعات</h4>
                         <ul class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
-                            <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">درباره ما</a></li>
-                            <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">داشبورد کاربری</a></li>
+                            <li><a href="#" @click.prevent="currentView = 'home'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">درباره ما</a></li>
+                            <li><a href="#" @click.prevent="currentView = 'dashboard'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">داشبورد کاربری</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">قوانین و مقررات</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">حریم خصوصی</a></li>
                         </ul>
@@ -29,9 +37,9 @@ export default {
                     <div>
                         <h4 class="text-slate-800 dark:text-white font-bold mb-6 transition-colors duration-500">کاربران</h4>
                         <ul class="space-y-3 text-sm text-slate-500 dark:text-slate-400">
-                            <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">ثبت مکان ورزشی</a></li>
+                            <li><a href="#" @click.prevent="currentView = 'dashboard'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">ثبت مکان ورزشی</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">سوالات متداول</a></li>
-                            <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">تماس با ما</a></li>
+                            <li><a href="#" @click.prevent="currentView = 'contact'" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">تماس با ما</a></li>
                             <li><a href="#" class="hover:text-brand-500 dark:hover:text-brand-400 transition-colors">فرایند خرید</a></li>
                         </ul>
                     </div>

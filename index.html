@@ -100,14 +100,15 @@
     <div>
         <app-navbar></app-navbar>
 
-        <transition name="fade-slide" mode="out-in">
+<transition name="fade-slide" mode="out-in">
             <home-view v-if="currentView === 'home'" key="home"></home-view>
             <results-view v-else-if="currentView === 'results'" key="results"></results-view>
             <auth-view v-else-if="currentView === 'auth'" key="auth"></auth-view>
             <pro-search-view v-else-if="currentView === 'pro-search'"></pro-search-view>
             <venue-detail-view v-else-if="currentView === 'venue-detail'" key="venue-detail"></venue-detail-view>
-            <!-- خطای بسته شدن تگ اینجا برطرف شد -->
             <dashboard-view v-else-if="currentView === 'dashboard'" key="dashboard"></dashboard-view>
+            <!-- این خط رو اضافه کن -->
+            <contact-view v-else-if="currentView === 'contact'" key="contact"></contact-view> 
         </transition>
     </div>
 
@@ -129,6 +130,7 @@
     import AppFooter from './components/AppFooter.js';
     import ProSearch from './components/ProSearch.js';
     import RegisterVenue from './components/RegisterVenue.js';
+    import ContactView from './components/ContactView.js';
 
     const { createApp, toRefs, onMounted } = window.Vue;
 
@@ -161,6 +163,7 @@
     app.component('app-footer', AppFooter);
     app.component('pro-search-view', ProSearch);
     app.component('register-venue', RegisterVenue);
+    app.component('contact-view', ContactView);
 
     app.mount('#app');
 </script>
