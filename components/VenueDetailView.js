@@ -686,43 +686,9 @@ export default {
 
                 </div>
 
-                <div class="mb-12 animate-fade-up">
-                    <div class="flex items-end justify-between mb-8">
-                        <div class="space-y-1">
-                            <h3 class="text-xl md:text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2.5">
-                                <span class="w-2.5 h-7 bg-brand-500 rounded-full inline-block"></span>
-                                پیشنهاد رزرو اسپورت
-                            </h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500">مجموعه و سالن‌های ورزشی مشابه با خدمات رفاهی عالی</p>
-                        </div>
-                    </div>
+               
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div v-for="(rec, index) in popularVenues" :key="index"
-                             class="group bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] border border-slate-200 dark:border-white/5 rounded-3xl p-4 hover:border-brand-500/35 transition-all duration-500 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
-                            
-                            <div>
-                                <div class="relative h-40 rounded-2xl overflow-hidden mb-4">
-                                    <img :src="rec.image" :alt="rec.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                                    <span class="absolute top-2.5 right-2.5 bg-black/60 text-[10px] font-black text-yellow-400 px-2 py-1 rounded-lg backdrop-blur">
-                                        ★ {{ rec.rating }}
-                                    </span>
-                                </div>
-
-                                <div class="px-1 text-right">
-                                    <h4 class="text-sm font-black text-slate-800 dark:text-white group-hover:text-brand-500 duration-300 mb-1 line-clamp-1">{{ rec.name }}</h4>
-                                    <span class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">📍 قم، محله {{ rec.city }}</span>
-                                </div>
-                            </div>
-
-                            <div class="pt-3 mt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between px-1">
-                                <span class="text-[10px] text-brand-500 dark:text-brand-400 font-bold">{{ rec.price }} تومان</span>
-                                <button class="bg-brand-500 hover:bg-brand-400 text-white dark:text-dark-bg text-[10px] font-black px-3.5 py-2 rounded-xl transition-all">رزرو فوری</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+ 
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-fade-up">
                     

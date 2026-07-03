@@ -109,6 +109,7 @@
             <dashboard-view v-else-if="currentView === 'dashboard'" key="dashboard"></dashboard-view>
             <!-- این خط رو اضافه کن -->
             <contact-view v-else-if="currentView === 'contact'" key="contact"></contact-view> 
+            <about-view v-else-if="currentView === 'about'" key="about"></about-view>
         </transition>
     </div>
 
@@ -131,6 +132,9 @@
     import ProSearch from './components/ProSearch.js';
     import RegisterVenue from './components/RegisterVenue.js';
     import ContactView from './components/ContactView.js';
+    import AboutView from './components/AboutView.js';
+
+
 
     const { createApp, toRefs, onMounted } = window.Vue;
 
@@ -164,6 +168,8 @@
     app.component('pro-search-view', ProSearch);
     app.component('register-venue', RegisterVenue);
     app.component('contact-view', ContactView);
+    app.component('about-view', AboutView);
+
 
     app.mount('#app');
 </script>
