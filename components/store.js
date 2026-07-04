@@ -2,7 +2,7 @@ const { reactive } = window.Vue;
 
 export const store = reactive({
     currentView: 'home', // 'home' | 'results' | 'auth' | 'venue-detail' | 'dashboard'
-    isDark: true,
+    isDark: false,
     isMobileMenuOpen: false,
     showNotifications: false,
     notificationHistory: [],
