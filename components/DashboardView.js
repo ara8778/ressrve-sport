@@ -244,6 +244,11 @@ export default {
                 addNotification('خطا', 'لطفاً مبلغ شارژ را مشخص کنید.', 'error');
                 return;
             }
+            // تبدیل مبلغ به فرمت عدد برای شبیه‌سازی افزایش موجودی
+            const numAmount = parseInt(finalAmount.replace(/,/g, ''));
+            const currentNum = parseInt(store.user.credit.replace(/,/g, ''));
+            store.user.credit = (currentNum + numAmount).toLocaleString('en-US');
+            
             addNotification('شارژ موفق', `مبلغ ${finalAmount} تومان با موفقیت به حساب شما واریز شد.`, 'success');
             showChargeModal.value = false;
             selectedAmount.value = '';
@@ -285,46 +290,162 @@ export default {
             landline: '',
             phone: '',
             description: '',
+            workingHours: { start: '', end: '' }, // ساعت کاری پیش‌فرض
             facilities: [],
             sports: [],
             genders: [],
+            academy: { isActive: false, days: [], startTime: '', endTime: '' }, // آکادمی
+            province: '',
             city: '',
             address: '',
-            venuePhotos: [],
-            documentPhotos: []
+            mapCoordinates: null,
+            venuePhotos: [], // آرایه تصاویر سالن
+            documents: []
         });
 
-        // لیست امکانات (بر اساس تصویر و متداول در سالن‌ها)
+        // تغییر امکانات
         const availableFacilities = [
             { id: 'parking', name: 'پارکینگ اختصاصی', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
             { id: 'buffet', name: 'بوفه / کافی‌شاپ', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
             { id: 'locker', name: 'رختکن', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
             { id: 'shower', name: 'دوش حمام', icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z' },
             { id: 'ac', name: 'تهویه مطبوع', icon: 'M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5' },
-            { id: 'wifi', name: 'اینترنت وای‌فای', icon: 'M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0' },
+            { id: 'water_cooler', name: 'آبسردکن و یخ‌ساز', icon: 'M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S12 3 12 3s-4.5 3.97-4.5 9 2.015 9 4.5 9z' },
             { id: 'restroom', name: 'سرویس بهداشتی', icon: 'M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z' },
             { id: 'stands', name: 'جایگاه تماشاچی', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
         ];
 
         const availableSports = ['فوتسال', 'والیبال', 'بسکتبال', 'هندبال', 'تنیس', 'پینت‌بال', 'چمن مصنوعی', 'بدمینتون'];
-        const availableGenders = ['آقایان', 'بانوان', 'خردسالان (آکادمی)'];
+        const availableGenders = ['مرد', 'زن'];
+
+        // مقادیر کاستوم سلکت‌های فرم ثبت
+        const regProvinces = ['تهران', 'قم', 'البرز', 'اصفهان', 'خراسان رضوی', 'فارس', 'گیلان', 'مازندران'];
+        const regCities = ['تهران', 'قم', 'کرج', 'اصفهان', 'مشهد', 'شیراز', 'رشت', 'ساری'];
+        const isRegProvinceOpen = ref(false);
+        const isRegCityOpen = ref(false);
+        
+        const selectRegProvince = (prov) => { venueForm.value.province = prov; isRegProvinceOpen.value = false; };
+        const selectRegCity = (city) => { venueForm.value.city = city; isRegCityOpen.value = false; };
+
+        // منطق نقشه
+        const handleMapClick = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            venueForm.value.mapCoordinates = { 
+                percentX: (x / rect.width) * 100, 
+                percentY: (y / rect.height) * 100 
+            };
+        };
+
+        // منطق آپلود عکس‌های سالن
+        const photoInputRef = ref(null);
+        const triggerPhotoUpload = () => { photoInputRef.value.click(); };
+        const handlePhotoUpload = (e) => {
+            const files = Array.from(e.target.files);
+            if (venueForm.value.venuePhotos.length + files.length > 4) {
+                addNotification('خطا', 'شما مجاز به آپلود حداکثر ۴ تصویر از سالن هستید.', 'error');
+                return;
+            }
+            files.forEach(file => {
+                if (venueForm.value.venuePhotos.length < 4) {
+                    venueForm.value.venuePhotos.push({
+                        id: Date.now() + Math.random(),
+                        url: URL.createObjectURL(file),
+                        file: file
+                    });
+                }
+            });
+            e.target.value = '';
+        };
+        const removePhoto = (id) => {
+            venueForm.value.venuePhotos = venueForm.value.venuePhotos.filter(p => p.id !== id);
+        };
+
+        // منطق آپلود فایل سند
+        const fileInputRef = ref(null);
+        const triggerDocUpload = () => { fileInputRef.value.click(); };
+        const handleDocUpload = (e) => {
+            const files = Array.from(e.target.files);
+            if (venueForm.value.documents.length + files.length > 5) {
+                addNotification('خطا', 'شما مجاز به آپلود حداکثر ۵ تصویر هستید.', 'error');
+                return;
+            }
+            files.forEach(file => {
+                if (venueForm.value.documents.length < 5) {
+                    venueForm.value.documents.push({
+                        id: Date.now() + Math.random(),
+                        url: URL.createObjectURL(file),
+                        file: file
+                    });
+                }
+            });
+            e.target.value = '';
+        };
+        const removeDoc = (id) => {
+            venueForm.value.documents = venueForm.value.documents.filter(d => d.id !== id);
+        };
 
         const nextRegisterStep = () => {
-            if (registerStep.value < 5) registerStep.value++;
+            // اعتبارسنجی مراحل (با 6 مرحله جدید)
+            if (registerStep.value === 1) {
+                if (!venueForm.value.name || !venueForm.value.ownerName || !venueForm.value.phone || !venueForm.value.workingHours.start || !venueForm.value.workingHours.end) {
+                    addNotification('خطا', 'لطفاً فیلدهای الزامی (ستاره‌دار) شامل ساعات فعالیت را در این مرحله تکمیل کنید.', 'error');
+                    return;
+                }
+            } else if (registerStep.value === 2) {
+                if (venueForm.value.facilities.length === 0) {
+                    addNotification('خطا', 'انتخاب حداقل یک امکان رفاهی الزامی است.', 'error');
+                    return;
+                }
+            } else if (registerStep.value === 3) {
+                if (venueForm.value.sports.length === 0 || venueForm.value.genders.length === 0) {
+                    addNotification('خطا', 'لطفاً حداقل یک رشته ورزشی و جنسیت پذیرش را مشخص کنید.', 'error');
+                    return;
+                }
+            } else if (registerStep.value === 4) {
+                // آکادمی اختیاری است، اما اگر فعال شد باید تکمیل شود
+                if (venueForm.value.academy.isActive && (venueForm.value.academy.days.length === 0 || !venueForm.value.academy.startTime || !venueForm.value.academy.endTime)) {
+                    addNotification('خطا', 'لطفاً روزها و ساعات آکادمی را مشخص کنید یا تیک فعال‌سازی را بردارید.', 'error');
+                    return;
+                }
+            } else if (registerStep.value === 5) {
+                if (!venueForm.value.province || !venueForm.value.city || !venueForm.value.address || !venueForm.value.mapCoordinates) {
+                    addNotification('خطا', 'لطفاً استان، شهر، آدرس دقیق و لوکیشن روی نقشه را به صورت کامل مشخص کنید.', 'error');
+                    return;
+                }
+            }
+
+            if (registerStep.value < 6) registerStep.value++;
         };
         const prevRegisterStep = () => {
             if (registerStep.value > 1) registerStep.value--;
         };
         
         const submitVenueRegistration = () => {
-            // شبیه‌سازی ارسال اطلاعات و بازگشت به داشبورد
+            if (venueForm.value.venuePhotos.length === 0) {
+                addNotification('خطا', 'لطفاً حداقل یک تصویر از محیط سالن ورزشی آپلود کنید.', 'error');
+                return;
+            }
+            if (venueForm.value.documents.length === 0) {
+                addNotification('خطا', 'لطفاً حداقل یک تصویر از سند مالکیت یا اجاره‌نامه آپلود کنید.', 'error');
+                return;
+            }
+
+            // پاکسازی حافظه URLهای ساخته شده
+            venueForm.value.documents.forEach(doc => URL.revokeObjectURL(doc.url));
+            venueForm.value.venuePhotos.forEach(photo => URL.revokeObjectURL(photo.url));
+
             handleRegistrationComplete();
             addNotification('ثبت موفق', 'اطلاعات مجموعه ورزشی شما با موفقیت ارسال شد و پس از بررسی فعال خواهد شد.', 'success');
-            // ریست کردن فرم
+            
             registerStep.value = 1;
             venueForm.value = {
                 name: '', ownerName: '', landline: '', phone: '', description: '',
-                facilities: [], sports: [], genders: [], city: '', address: '', venuePhotos: [], documentPhotos: []
+                workingHours: { start: '', end: '' },
+                facilities: [], sports: [], genders: [],
+                academy: { isActive: false, days: [], startTime: '', endTime: '' },
+                province: '', city: '', address: '', mapCoordinates: null, venuePhotos: [], documents: []
             };
         };
 
@@ -382,6 +503,22 @@ export default {
             availableFacilities,
             availableSports,
             availableGenders,
+            weekdays,
+            regProvinces,
+            regCities,
+            isRegProvinceOpen,
+            isRegCityOpen,
+            selectRegProvince,
+            selectRegCity,
+            handleMapClick,
+            photoInputRef,
+            triggerPhotoUpload,
+            handlePhotoUpload,
+            removePhoto,
+            fileInputRef,
+            triggerDocUpload,
+            handleDocUpload,
+            removeDoc,
             nextRegisterStep,
             prevRegisterStep,
             submitVenueRegistration
@@ -395,17 +532,14 @@ export default {
 
             <div class="container mx-auto px-4 lg:px-8 relative z-20 max-w-6xl">
                 
-                <!-- Profile Header Banner (New Top Layout - Modified based on user request) -->
+                <!-- Profile Header Banner -->
                 <div class="border border-brand-500/20 rounded-[2rem] shadow-xl overflow-hidden relative mb-6 animate-fade-up">
-                    <!-- Full Blue Background -->
                     <div class="absolute inset-0 bg-gradient-to-r from-brand-600 via-cyan-500 to-blue-600 opacity-100">
                         <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(white 1px, transparent 1px); background-size: 20px 20px;"></div>
                     </div>
                     
                     <div class="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                        <!-- Avatar & Personal Info -->
                         <div class="flex flex-col md:flex-row items-center gap-5 w-full md:w-auto text-center md:text-right">
-                            <!-- Avatar -->
                             <div class="w-24 h-24 md:w-28 md:h-28 shrink-0 rounded-[1.8rem] bg-white/20 backdrop-blur-md p-1.5 shadow-xl relative z-10 group transition-transform duration-500 hover:-translate-y-1">
                                 <div class="w-full h-full rounded-[1.4rem] border-2 border-white/40 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                                     <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -427,7 +561,6 @@ export default {
                             </div>
                         </div>
                         
-                        <!-- Logout Action -->
                         <button @click="handleLogout" class="w-full md:w-auto shrink-0 flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black transition-all duration-300 shadow-xl shadow-red-900/20 border border-red-500 group mt-4 md:mt-0">
                             <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                             خروج از حساب
@@ -435,9 +568,8 @@ export default {
                     </div>
                 </div>
 
-                <!-- Horizontal Tab Navigation (Replaced Sidebar) -->
+                <!-- Horizontal Tab Navigation -->
                 <nav class="glass-panel backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-[1.5rem] shadow-lg p-2.5 flex items-center gap-2 overflow-x-auto w-full mb-8 sticky top-24 z-30 animate-fade-up delay-75 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    
                     <button @click="activeTab = 'overview'" 
                             :class="activeTab === 'overview' ? 'bg-brand-500 text-white shadow-glow' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-brand-500 dark:hover:text-brand-400'"
                             class="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-bold transition-all duration-300 whitespace-nowrap shrink-0 group relative overflow-hidden">
@@ -482,14 +614,13 @@ export default {
                     </button>
                 </nav>
 
-                <!-- Main Content Area (Full Width within container) -->
+                <!-- Main Content Area -->
                 <main class="w-full animate-fade-up delay-150 relative min-h-[500px]">
                     <transition name="fade-slide" mode="out-in">
                         
                         <!-- TAB: Overview (داشبورد من) -->
                         <div v-if="activeTab === 'overview'" key="overview" class="space-y-6">
-                            
-                            <!-- بنر بالای داشبورد -->
+                            <!-- محتوای داشبورد -->
                             <div class="relative bg-gradient-to-r from-slate-900 to-slate-800 dark:from-[#0a0f1d] dark:to-slate-900 rounded-[2rem] p-8 md:p-10 overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-700/50 dark:border-brand-500/20 group">
                                 <div class="absolute inset-0 opacity-[0.15]" style="background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
                                 <div class="absolute -right-20 -top-20 w-72 h-72 bg-brand-500/20 rounded-full blur-[80px] group-hover:bg-brand-500/30 transition-all duration-700"></div>
@@ -510,14 +641,10 @@ export default {
                                 </div>
                             </div>
 
-                            <!-- بازطراحی بخش کارت‌ها (افزایش شارژ و درخواست جاری) -->
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                
-                                <!-- ویجت کیف پول دیجیتال (بخش اعتبار) -->
                                 <div class="lg:col-span-5 bg-gradient-to-br from-brand-600 to-blue-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group border border-brand-400/30 flex flex-col justify-between min-h-[220px] transition-transform duration-500 hover:-translate-y-1">
                                     <div class="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-[60px] pointer-events-none"></div>
                                     <div class="absolute left-6 top-6 opacity-40 group-hover:opacity-100 transition-opacity">
-                                        <!-- آیکون سیم‌کارت یا چیپ -->
                                         <svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" stroke-width="1.5"></rect><rect x="9" y="9" width="6" height="6" rx="1" ry="1" stroke-width="1.5"></rect><line x1="9" y1="4" x2="9" y2="9" stroke-width="1.5"></line><line x1="15" y1="4" x2="15" y2="9" stroke-width="1.5"></line><line x1="9" y1="15" x2="9" y2="20" stroke-width="1.5"></line><line x1="15" y1="15" x2="15" y2="20" stroke-width="1.5"></line><line x1="4" y1="9" x2="9" y2="9" stroke-width="1.5"></line><line x1="4" y1="15" x2="9" y2="15" stroke-width="1.5"></line><line x1="15" y1="9" x2="20" y2="9" stroke-width="1.5"></line><line x1="15" y1="15" x2="20" y2="15" stroke-width="1.5"></line></svg>
                                     </div>
                                     
@@ -539,12 +666,10 @@ export default {
                                     </div>
                                 </div>
 
-                                <!-- ویجت گرافیکی درخواست‌های جاری -->
                                 <div class="lg:col-span-7 bg-white dark:bg-dark-card rounded-[2.5rem] p-8 shadow-xl border border-slate-200 dark:border-white/10 flex flex-col justify-center relative overflow-hidden group hover:border-brand-500/30 transition-all duration-500">
                                     <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-amber-500/10 rounded-full blur-[60px] pointer-events-none"></div>
                                     
                                     <div class="relative z-10 flex flex-col md:flex-row items-center gap-8 h-full">
-                                        <!-- نمودار دایره‌ای آماری -->
                                         <div class="relative w-36 h-36 shrink-0 flex items-center justify-center">
                                             <svg class="w-full h-full transform -rotate-90 absolute inset-0 drop-shadow-md" viewBox="0 0 36 36">
                                                 <circle cx="18" cy="18" r="16" fill="none" class="stroke-slate-100 dark:stroke-white/5" stroke-width="2.5"></circle>
@@ -576,6 +701,7 @@ export default {
 
                         <!-- TAB: Tracking (پیگیری خرید) -->
                         <div v-else-if="activeTab === 'tracking'" key="tracking" class="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10">
+                            <!-- محتوای پیگیری تغییر نکرده است -->
                             <div class="flex items-center justify-between mb-8 border-b border-slate-100 dark:border-white/5 pb-6">
                                 <div class="flex items-center gap-4">
                                     <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500">
@@ -643,6 +769,7 @@ export default {
 
                         <!-- TAB: Profile (ویرایش اطلاعات) -->
                         <div v-else-if="activeTab === 'profile'" key="profile" class="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10">
+                            <!-- محتوای پروفایل تغییر نکرده است -->
                             <div class="flex items-center gap-4 mb-8 border-b border-slate-100 dark:border-white/5 pb-6">
                                 <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -695,6 +822,7 @@ export default {
 
                         <!-- TAB: Security (تغییر رمز عبور) -->
                         <div v-else-if="activeTab === 'security'" key="security" class="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10 overflow-hidden relative">
+                            <!-- محتوای امنیت تغییر نکرده است -->
                             <div class="flex items-center gap-4 mb-8 border-b border-slate-100 dark:border-white/5 pb-6 relative z-10">
                                 <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500">
                                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -735,6 +863,7 @@ export default {
 
                         <!-- TAB: Venues (سالن من) -->
                         <div v-else-if="activeTab === 'venues'" key="venues" class="space-y-6">
+                            <!-- محتوای سالن من تغییر نکرده است (شامل تقویم و ...) -->
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 rounded-[2rem] border border-slate-200 dark:border-white/5 shadow-md">
                                 <div>
                                     <h3 class="text-2xl font-black text-slate-800 dark:text-white">مدیریت سالن‌های من</h3>
@@ -789,7 +918,7 @@ export default {
 
                             <transition name="fade-slide">
                                 <div v-if="showManagementPanel && userVenueStatus === 'active'" class="space-y-6 animate-fade-up">
-                                    
+                                    <!-- تقویم و بقیه پنل مدیریت بدون تغییر -->
                                     <div class="glass-panel rounded-[2.5rem] p-6 lg:p-10 shadow-lg border border-slate-200 dark:border-white/10 space-y-6">
                                         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-white/5 pb-4">
                                             <div class="flex items-center gap-3">
@@ -1034,6 +1163,7 @@ export default {
 
                         <!-- TAB: Purchases (تاریخچه خرید کامل شده) -->
                         <div v-else-if="activeTab === 'purchases'" key="purchases" class="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10">
+                            <!-- محتوای تاریخچه خرید تغییر نکرده است -->
                             <div class="flex items-center justify-between mb-8 border-b border-slate-100 dark:border-white/5 pb-6">
                                 <div class="flex items-center gap-4">
                                     <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500">
@@ -1072,7 +1202,7 @@ export default {
                             </div>
                         </div>
 
-                        <!-- TAB: Register Venue (افزودن مجموعه ورزشی) - NEW ADDITION -->
+                        <!-- TAB: Register Venue (افزودن مجموعه ورزشی) - UPDATED -->
                         <div v-else-if="activeTab === 'register'" key="register" class="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-white/10 relative overflow-hidden">
                             <!-- Background Decor -->
                             <div class="absolute -right-20 -top-20 w-80 h-80 bg-brand-500/10 rounded-full blur-[80px] pointer-events-none"></div>
@@ -1085,7 +1215,7 @@ export default {
                                     </div>
                                     <div>
                                         <h3 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-1">ثبت مجموعه ورزشی جدید</h3>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">اطلاعات سالن خود را در ۵ مرحله به صورت دقیق تکمیل کنید</p>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">اطلاعات سالن خود را در ۶ مرحله به صورت دقیق تکمیل کنید</p>
                                     </div>
                                 </div>
                                 <button @click="activeTab = 'venues'" class="text-sm font-bold text-slate-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 bg-slate-100 hover:bg-red-50 dark:bg-dark-bg/50 dark:hover:bg-red-500/10 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-red-200 dark:hover:border-red-500/20">
@@ -1096,21 +1226,19 @@ export default {
                             <!-- Stepper Indicator -->
                             <div class="relative z-10 mb-12 px-2 sm:px-8">
                                 <div class="flex items-center justify-between relative">
-                                    <!-- Progress Line Background -->
                                     <div class="absolute right-0 top-1/2 -translate-y-1/2 w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full z-0"></div>
-                                    <!-- Progress Line Active -->
-                                    <div class="absolute right-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-l from-brand-500 to-cyan-500 rounded-full z-0 transition-all duration-700 ease-in-out" :style="{ width: ((registerStep - 1) / 4) * 100 + '%' }"></div>
+                                    <div class="absolute right-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-l from-brand-500 to-cyan-500 rounded-full z-0 transition-all duration-700 ease-in-out" :style="{ width: ((registerStep - 1) / 5) * 100 + '%' }"></div>
                                     
-                                    <div v-for="step in 5" :key="step" 
+                                    <div v-for="step in 6" :key="step" 
                                          class="relative z-10 flex flex-col items-center gap-3 transition-all duration-500"
                                          :class="registerStep >= step ? 'opacity-100 scale-100' : 'opacity-40 scale-95 grayscale'">
-                                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg transition-all duration-300"
+                                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-base md:text-lg transition-all duration-300"
                                              :class="registerStep >= step ? 'bg-brand-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] ring-4 ring-brand-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-2 border-white dark:border-dark-card'">
-                                            <span v-if="registerStep > step"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></span>
+                                            <span v-if="registerStep > step"><svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></span>
                                             <span v-else>{{ step }}</span>
                                         </div>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 hidden sm:block whitespace-nowrap bg-white dark:bg-dark-card px-2 py-0.5 rounded-md">
-                                            {{ ['اطلاعات اصلی', 'امکانات سالن', 'رشته و سانس', 'موقعیت و آدرس', 'تایید مدارک'][step-1] }}
+                                        <span class="text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-300 hidden sm:block whitespace-nowrap bg-white dark:bg-dark-card px-2 py-0.5 rounded-md">
+                                            {{ ['اطلاعات اصلی', 'امکانات سالن', 'رشته و سانس', 'آکادمی', 'موقعیت و آدرس', 'تایید مدارک'][step-1] }}
                                         </span>
                                     </div>
                                 </div>
@@ -1143,6 +1271,19 @@ export default {
                                                 <input v-model="venueForm.phone" type="tel" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm dir-ltr text-right font-medium" placeholder="09123456789">
                                             </div>
                                         </div>
+
+                                        <!-- ساعت کاری پیش‌فرض -->
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100 dark:border-white/5">
+                                            <div>
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت شروع فعالیت سالن <span class="text-red-500">*</span></label>
+                                                <input v-model="venueForm.workingHours.start" type="time" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت پایان فعالیت سالن <span class="text-red-500">*</span></label>
+                                                <input v-model="venueForm.workingHours.end" type="time" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                            </div>
+                                        </div>
+
                                         <div>
                                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">توضیحات و معرفی سالن</label>
                                             <textarea v-model="venueForm.description" rows="4" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium" placeholder="توضیحات مختصری درباره سالن، ابعاد زمین، نوع کفپوش، سال تاسیس و شرایط کلی..."></textarea>
@@ -1154,7 +1295,7 @@ export default {
                                         <h4 class="text-lg font-black text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                                             <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> امکانات رفاهی و تجهیزات
                                         </h4>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">مواردی که در مجموعه شما برای ورزشکاران در دسترس است را انتخاب کنید:</p>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">مواردی که در مجموعه شما برای ورزشکاران در دسترس است را انتخاب کنید (حداقل یک مورد): <span class="text-red-500">*</span></p>
                                         
                                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                             <label v-for="fac in availableFacilities" :key="fac.id" 
@@ -1184,11 +1325,11 @@ export default {
                                         <h4 class="text-lg font-black text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                                             <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> رشته‌های ورزشی و مخاطبین
                                         </h4>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">رشته‌های قابل اجرا در زمین و رده‌های پذیرش را مشخص کنید.</p>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">رشته‌های قابل اجرا در زمین و جنسیت پذیرش را مشخص کنید (انتخاب حداقل یکی الزامی است).</p>
 
                                         <!-- Sports -->
                                         <div class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-                                            <h5 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">رشته‌های ورزشی مجاز</h5>
+                                            <h5 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">رشته‌های ورزشی مجاز <span class="text-red-500">*</span></h5>
                                             <div class="flex flex-wrap gap-3">
                                                 <label v-for="sport in availableSports" :key="sport" class="cursor-pointer group">
                                                     <input type="checkbox" :value="sport" v-model="venueForm.sports" class="hidden">
@@ -1203,9 +1344,9 @@ export default {
                                         
                                         <!-- Genders -->
                                         <div class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-                                            <h5 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">جنسیت و رده سنی پذیرش</h5>
+                                            <h5 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">جنسیت پذیرش <span class="text-red-500">*</span></h5>
                                             <div class="flex flex-wrap gap-4">
-                                                <label v-for="gender in availableGenders" :key="gender" class="flex items-center gap-3 cursor-pointer p-4 pr-5 rounded-xl border-2 transition-all duration-300 group"
+                                                <label v-for="gender in availableGenders" :key="gender" class="flex items-center gap-3 cursor-pointer p-4 pr-5 rounded-xl border-2 transition-all duration-300 group w-32 justify-center"
                                                     :class="venueForm.genders.includes(gender) ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-500/10' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-brand-300'">
                                                     <div class="relative w-6 h-6 flex items-center justify-center shrink-0">
                                                         <input type="checkbox" :value="gender" v-model="venueForm.genders" class="appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-500 rounded-md checked:bg-brand-500 checked:border-brand-500 transition-colors cursor-pointer peer">
@@ -1217,89 +1358,208 @@ export default {
                                         </div>
                                     </div>
 
-                                    <!-- Step 4: Location -->
+                                    <!-- Step 4: Academy -->
                                     <div v-else-if="registerStep === 4" key="step4" class="space-y-6">
+                                        <h4 class="text-lg font-black text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                            <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> آکادمی ورزشی (اختیاری)
+                                        </h4>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">در صورتی که مجموعه شما دارای دوره‌های آموزشی و آکادمی است، روزها و ساعات آن را مشخص کنید تا در این زمان‌ها امکان رزرو عادی غیرفعال شود.</p>
+
+                                        <div class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
+                                            <div class="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-white/5 pb-4">
+                                                <h5 class="text-sm font-bold text-slate-700 dark:text-slate-300">فعال‌سازی بخش آکادمی</h5>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" v-model="venueForm.academy.isActive" class="sr-only peer">
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
+                                                </label>
+                                            </div>
+
+                                            <transition name="fade-slide">
+                                                <div v-if="venueForm.academy.isActive" class="space-y-6">
+                                                    <div>
+                                                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">روزهای برگزاری آکادمی</label>
+                                                        <div class="flex flex-wrap gap-3">
+                                                            <label v-for="day in weekdays" :key="'acad-'+day" class="cursor-pointer group">
+                                                                <input type="checkbox" :value="day" v-model="venueForm.academy.days" class="hidden">
+                                                                <div class="px-4 py-2.5 rounded-xl border-2 transition-all duration-300 font-bold text-sm select-none"
+                                                                     :class="venueForm.academy.days.includes(day) ? 'border-brand-500 bg-brand-500 text-white shadow-md shadow-brand-500/20' : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:border-brand-300'">
+                                                                    {{ day }}
+                                                                </div>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت شروع آکادمی</label>
+                                                            <input v-model="venueForm.academy.startTime" type="time" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت پایان آکادمی</label>
+                                                            <input v-model="venueForm.academy.endTime" type="time" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </transition>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 5: Location -->
+                                    <div v-else-if="registerStep === 5" key="step5" class="space-y-6">
                                         <h4 class="text-lg font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
                                             <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> موقعیت جغرافیایی سالن
                                         </h4>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div class="relative">
-                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">استان / شهر</label>
-                                                <!-- Custom Dropdown for City -->
-                                                <div class="relative">
-                                                    <select v-model="venueForm.city" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm appearance-none cursor-pointer font-medium pr-12">
-                                                        <option value="" disabled selected>شهر خود را انتخاب کنید...</option>
-                                                        <option v-for="c in cities" :key="c" :value="c">{{ c }}</option>
-                                                    </select>
-                                                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                    </div>
+                                            <!-- Custom Select Province -->
+                                            <div class="relative" @blur="isRegProvinceOpen = false" tabindex="0">
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">استان <span class="text-red-500">*</span></label>
+                                                <div @click="isRegProvinceOpen = !isRegProvinceOpen" 
+                                                     class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                     :class="{'border-brand-500 ring-2 ring-brand-500/20': isRegProvinceOpen}">
+                                                    <span>{{ venueForm.province || 'استان خود را انتخاب کنید...' }}</span>
+                                                    <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': isRegProvinceOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
+                                                <transition name="dropdown">
+                                                    <div v-if="isRegProvinceOpen" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                        <div v-for="prov in regProvinces" :key="prov" 
+                                                             @click.stop="selectRegProvince(prov)" 
+                                                             class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors flex items-center justify-between group">
+                                                            {{ prov }}
+                                                            <svg v-if="venueForm.province === prov" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                            <span v-else class="w-2 h-2 rounded-full bg-transparent group-hover:bg-brand-500/30 transition-colors"></span>
+                                                        </div>
+                                                    </div>
+                                                </transition>
                                             </div>
+
+                                            <!-- Custom Select City -->
+                                            <div class="relative" @blur="isRegCityOpen = false" tabindex="0">
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">شهر <span class="text-red-500">*</span></label>
+                                                <div @click="venueForm.province ? (isRegCityOpen = !isRegCityOpen) : addNotification('اطلاعیه', 'ابتدا استان را انتخاب کنید', 'info')" 
+                                                     class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                     :class="{'border-brand-500 ring-2 ring-brand-500/20': isRegCityOpen, 'opacity-70': !venueForm.province}">
+                                                    <span>{{ venueForm.city || 'شهر خود را انتخاب کنید...' }}</span>
+                                                    <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': isRegCityOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                                <transition name="dropdown">
+                                                    <div v-if="isRegCityOpen && venueForm.province" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                        <div v-for="c in regCities" :key="c" 
+                                                             @click.stop="selectRegCity(c)" 
+                                                             class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors flex items-center justify-between group">
+                                                            {{ c }}
+                                                            <svg v-if="venueForm.city === c" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                            <span v-else class="w-2 h-2 rounded-full bg-transparent group-hover:bg-brand-500/30 transition-colors"></span>
+                                                        </div>
+                                                    </div>
+                                                </transition>
+                                            </div>
+
                                             <div class="md:col-span-2">
-                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">آدرس دقیق پستی</label>
+                                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">آدرس دقیق پستی <span class="text-red-500">*</span></label>
                                                 <textarea v-model="venueForm.address" rows="2" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium" placeholder="نام محله، خیابان اصلی، کوچه فرعی، پلاک، نام مجتمع..."></textarea>
                                             </div>
                                         </div>
                                         
-                                        <!-- Fake Map Area -->
+                                        <!-- Interactive Map Area -->
                                         <div>
                                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
-                                                <span>تعیین لوکیشن روی نقشه</span>
-                                                <span class="text-xs text-brand-500 font-bold bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-md">الزامی</span>
+                                                <span>تعیین لوکیشن روی نقشه <span class="text-red-500">*</span></span>
                                             </label>
-                                            <div class="w-full h-56 bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden relative group cursor-pointer border-2 border-slate-300 dark:border-slate-600 hover:border-brand-400 transition-colors shadow-sm">
+                                            <div @click="handleMapClick" class="w-full h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden relative group cursor-pointer border-2 border-slate-300 dark:border-slate-600 hover:border-brand-400 transition-colors shadow-sm">
                                                 <!-- Map Pattern Background -->
                                                 <div class="absolute inset-0 opacity-40 dark:opacity-20" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%239C92AC\' fill-opacity=\'0.8\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E'); background-size: 30px 30px;"></div>
-                                                <div class="absolute inset-0 flex items-center justify-center flex-col bg-white/60 dark:bg-black/60 backdrop-blur-[3px] transition-all group-hover:backdrop-blur-sm group-hover:bg-white/70 dark:group-hover:bg-black/70">
+                                                
+                                                <!-- Instruction Text (Hide if marker exists) -->
+                                                <div v-if="!venueForm.mapCoordinates" class="absolute inset-0 flex items-center justify-center flex-col bg-white/60 dark:bg-black/60 backdrop-blur-[3px] transition-all group-hover:backdrop-blur-sm group-hover:bg-white/70 dark:group-hover:bg-black/70 pointer-events-none">
                                                     <div class="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-lg mb-3 transform group-hover:-translate-y-2 transition-transform duration-300">
                                                         <svg class="w-8 h-8 text-brand-600 dark:text-brand-400 animate-bounce mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                                     </div>
                                                     <span class="text-sm font-black text-slate-800 dark:text-white bg-white/90 dark:bg-slate-900/90 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-white/10">برای ثبت دقیق موقعیت روی نقشه کلیک کنید</span>
                                                 </div>
+
+                                                <!-- The Marker -->
+                                                <div v-if="venueForm.mapCoordinates" class="absolute pointer-events-none drop-shadow-xl" 
+                                                     :style="{ left: venueForm.mapCoordinates.percentX + '%', top: venueForm.mapCoordinates.percentY + '%', transform: 'translate(-50%, -100%)' }">
+                                                    <svg class="w-10 h-10 text-brand-600" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Step 5: Uploads -->
-                                    <div v-else-if="registerStep === 5" key="step5" class="space-y-8">
+                                    <!-- Step 6: Uploads -->
+                                    <div v-else-if="registerStep === 6" key="step6" class="space-y-8">
                                         <h4 class="text-lg font-black text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                                             <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> احراز هویت و تصاویر سالن
                                         </h4>
                                         <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-6">بارگذاری مدارک و عکس‌های با کیفیت، روند تایید سالن شما را تسریع می‌بخشد.</p>
 
-                                        <!-- Venue Photos -->
+                                        <!-- Venue Photos (Real Logic) -->
                                         <div class="bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/5 rounded-2xl p-6 shadow-sm">
-                                            <h5 class="text-sm font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
-                                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                                گالری تصاویر مجموعه (حداقل ۴ عکس)
-                                            </h5>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h5 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                    گالری تصاویر مجموعه <span class="text-red-500">*</span>
+                                                </h5>
+                                                <span class="text-xs font-bold text-slate-500">{{ venueForm.venuePhotos.length }} / 4 تصویر</span>
+                                            </div>
                                             <p class="text-xs text-slate-500 dark:text-slate-400 mb-5">تصاویری واضح از محیط بازی، رختکن، ورودی سالن و امکانات ارسال کنید.</p>
                                             
+                                            <!-- Hidden File Input for Venue Photos -->
+                                            <input type="file" ref="photoInputRef" @change="handlePhotoUpload" multiple accept="image/*" class="hidden">
+                                            
                                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div v-for="i in 4" :key="'photo'+i" class="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-dark-bg/50 hover:bg-slate-100 dark:hover:bg-dark-card hover:border-brand-400 flex flex-col items-center justify-center cursor-pointer transition-all group relative overflow-hidden">
+                                                <!-- Image Previews -->
+                                                <div v-for="photo in venueForm.venuePhotos" :key="photo.id" class="aspect-[4/3] rounded-xl border-2 border-slate-300 dark:border-slate-600 overflow-hidden relative group bg-white shadow-sm">
+                                                    <img :src="photo.url" class="w-full h-full object-cover" />
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button @click="removePhoto(photo.id)" class="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-lg transform scale-0 group-hover:scale-100 duration-300">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Upload Trigger -->
+                                                <div v-if="venueForm.venuePhotos.length < 4" @click="triggerPhotoUpload" class="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-dark-bg/50 hover:bg-slate-100 dark:hover:bg-dark-card hover:border-brand-400 flex flex-col items-center justify-center cursor-pointer transition-all group relative overflow-hidden">
                                                     <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                                         <svg class="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                                     </div>
-                                                    <span class="text-xs font-bold text-slate-500 group-hover:text-brand-600 transition-colors">بارگذاری تصویر {{i}}</span>
+                                                    <span class="text-xs font-bold text-slate-500 group-hover:text-brand-600 transition-colors">افزودن تصویر</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- Documents -->
+                                        <!-- Documents (Real logic) -->
                                         <div class="bg-amber-50/50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 shadow-sm">
-                                            <h5 class="text-sm font-bold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-2">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                                سند مالکیت / اجاره‌نامه معتبر
-                                            </h5>
-                                            <p class="text-xs text-amber-600/80 dark:text-amber-500/80 mb-5">این مدارک جهت بررسی کارشناسان دریافت شده و به صورت محرمانه نزد پلتفرم باقی می‌ماند.</p>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h5 class="text-sm font-bold text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                    سند مالکیت / اجاره‌نامه معتبر <span class="text-red-500">*</span>
+                                                </h5>
+                                                <span class="text-xs font-bold text-amber-600">{{ venueForm.documents.length }} / 5 تصویر</span>
+                                            </div>
+                                            <p class="text-xs text-amber-600/80 dark:text-amber-500/80 mb-5">این مدارک جهت بررسی دریافت شده و محرمانه باقی می‌ماند (حداکثر ۵ تصویر انتخاب کنید).</p>
                                             
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div class="h-32 rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-500/50 bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-amber-500/10 flex flex-col items-center justify-center cursor-pointer transition-all group">
-                                                    <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                            <!-- Hidden File Input for Documents -->
+                                            <input type="file" ref="fileInputRef" @change="handleDocUpload" multiple accept="image/*" class="hidden">
+                                            
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <!-- Image Previews -->
+                                                <div v-for="doc in venueForm.documents" :key="doc.id" class="aspect-square rounded-xl border-2 border-amber-300 dark:border-amber-500/50 overflow-hidden relative group bg-white shadow-sm">
+                                                    <img :src="doc.url" class="w-full h-full object-cover" />
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button @click="removeDoc(doc.id)" class="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-lg transform scale-0 group-hover:scale-100 duration-300">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Upload Trigger Button -->
+                                                <div v-if="venueForm.documents.length < 5" @click="triggerDocUpload" class="aspect-square rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-500/50 bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-amber-500/10 flex flex-col items-center justify-center cursor-pointer transition-all group">
+                                                    <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-sm">
                                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                                                     </div>
-                                                    <span class="text-xs font-bold text-amber-700 dark:text-amber-400">کلیک برای انتخاب فایل سند</span>
+                                                    <span class="text-xs font-bold text-amber-700 dark:text-amber-400">افزودن فایل</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1316,7 +1576,7 @@ export default {
                                     <span class="hidden sm:inline">مرحله قبل</span>
                                 </button>
 
-                                <button v-if="registerStep < 5" @click="nextRegisterStep" 
+                                <button v-if="registerStep < 6" @click="nextRegisterStep" 
                                         class="px-6 md:px-8 py-3.5 rounded-xl bg-slate-800 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-slate-100 font-black shadow-lg shadow-slate-800/20 dark:shadow-white/20 transition-all flex items-center gap-2 hover:translate-x-1">
                                     <span class="hidden sm:inline">ادامه به مرحله بعد</span>
                                     <span class="sm:hidden">مرحله بعد</span>
@@ -1334,6 +1594,43 @@ export default {
                     </transition>
                 </main>
             </div>
+            
+            <!-- Modal Charge Wallet (New) -->
+            <transition name="fade-slide">
+                <div v-if="showChargeModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="showChargeModal = false"></div>
+                    <div class="relative bg-white dark:bg-dark-card w-full max-w-md rounded-[2rem] p-6 shadow-2xl border border-slate-200 dark:border-white/10 animate-fade-up">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-black text-slate-800 dark:text-white">افزایش موجودی کیف پول</h3>
+                            <button @click="showChargeModal = false" class="text-slate-400 hover:text-red-500 transition-colors bg-slate-100 hover:bg-red-50 dark:bg-dark-bg dark:hover:bg-red-500/10 p-2 rounded-full">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">انتخاب سریع مبلغ (تومان)</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button v-for="amount in predefinedAmounts" :key="amount"
+                                            @click="selectAmount(amount)"
+                                            :class="selectedAmount === amount ? 'bg-brand-500 text-white border-brand-500 shadow-md shadow-brand-500/30' : 'bg-slate-50 dark:bg-dark-bg text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-brand-400'"
+                                            class="py-3.5 rounded-xl border-2 font-bold transition-all duration-300">
+                                        {{ amount }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مبلغ دلخواه (تومان)</label>
+                                <input v-model="customAmount" type="text" @focus="selectedAmount = ''" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all text-center dir-ltr font-bold text-lg" placeholder="مثلاً ۱۵۰,۰۰۰">
+                            </div>
+                            <button @click="handleChargeWallet" class="w-full bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white font-black py-4 rounded-xl shadow-glow transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 text-lg">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                                پرداخت و شارژ حساب
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+            
         </div>
     `
 };
