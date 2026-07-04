@@ -19,6 +19,7 @@ export default {
 
         return { 
             ...toRefs(store), 
+            store,
             toggleTheme, 
             toggleNotifications, 
             scrolled 
@@ -46,8 +47,7 @@ export default {
                     </div>
 
                     <div class="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300">
-                        <a href="#" @click.prevent="currentView = 'dashboard'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">مجموعه ورزشی دارید؟</a>
-                        <a href="#" @click.prevent="currentView = 'dashboard'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">پیگیری خرید</a>
+                        <a href="#" @click.prevent="store.activeDashboardTab = 'tracking'; store.currentView = 'dashboard'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700">پیگیری خرید</a>
                         <a href="#" @click.prevent="currentView = 'about'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'about'}">درباره ما</a>
                         <a href="#" @click.prevent="currentView = 'faq'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'faq'}">سوالات متداول</a>
                         <a href="#" @click.prevent="currentView = 'contact'" class="nav-link hover:text-brand-500 dark:hover:text-brand-400 transition-colors duration-700" :class="{'text-brand-500 dark:text-brand-400 font-bold nav-link-active': currentView === 'contact'}">تماس با ما</a>
@@ -98,7 +98,7 @@ export default {
 
                         <div class="h-6 w-px bg-slate-300 dark:bg-dark-border hidden sm:block"></div>
                         
-                        <button @click="currentView = 'dashboard'" class="flex items-center gap-2 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-500 hover:text-white text-brand-600 dark:text-brand-400 border border-brand-500/20 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-300 font-bold group text-sm sm:text-base shadow-sm">
+                        <button @click="store.activeDashboardTab = 'overview'; currentView = 'dashboard'" class="flex items-center gap-2 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-500 hover:text-white text-brand-600 dark:text-brand-400 border border-brand-500/20 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-300 font-bold group text-sm sm:text-base shadow-sm">
                             <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                             <span class="hidden sm:inline">داشبورد</span>
                         </button>
@@ -126,8 +126,7 @@ export default {
                         </div>
                         <div class="flex-1 overflow-y-auto py-4 px-3 space-y-2">
                             <a href="#" @click.prevent="currentView = 'home'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">صفحه اصلی</a>
-                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">مجموعه ورزشی دارید؟</a>
-                            <a href="#" @click.prevent="currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">پیگیری خرید</a>
+                            <a href="#" @click.prevent="store.activeDashboardTab = 'tracking'; store.currentView = 'dashboard'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">پیگیری خرید</a>
                             <a href="#" @click.prevent="currentView = 'about'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">درباره ما</a>
                             <a href="#" @click.prevent="currentView = 'faq'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">سوالات متداول</a>
                             <a href="#" @click.prevent="currentView = 'contact'; isMobileMenuOpen = false" class="block px-4 py-3 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-500 transition-colors">تماس با ما</a>

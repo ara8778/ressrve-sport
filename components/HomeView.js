@@ -18,6 +18,13 @@ export default {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
+        // ناوبری هوشمند برای دکمه ثبت رایگان مجموعه
+        const goToRegisterVenue = () => {
+            store.activeDashboardTab = 'register';
+            store.currentView = 'dashboard';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
         const sportCategories = [
             { id: 1, name: 'فوتبال', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', color: 'from-emerald-400 to-green-500', shadow: 'shadow-[0_4px_15px_rgba(16,185,129,0.3)]' },
             { id: 2, name: 'فوتسال', icon: 'M13 10V3L4 14h7v7l9-11h-7z', color: 'from-brand-400 to-cyan-500', shadow: 'shadow-[0_4px_15px_rgba(6,182,212,0.3)]' },
@@ -42,6 +49,7 @@ export default {
             handleSlotBooking,
             goToDetail,
             goToProSearch,
+            goToRegisterVenue,
             sportCategories,
             latestVenues
         };
@@ -112,12 +120,12 @@ export default {
                         جستجو، مقایسه و رزرو آنلاین بهترین اماکن ورزشی در سراسر شهر. بدون نیاز به تماس، فقط با چند کلیک سانس خودت رو قطعی کن.
                     </p>
 
-                    <div class="max-w-5xl mx-auto bg-white/90 dark:bg-dark-card/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-4 md:p-5 rounded-[2rem] shadow-xl dark:shadow-2xl animate-fade-up delay-300 relative z-30 transition-colors duration-500">
+                    <div class="max-w-5xl mx-auto bg-white/90 dark:bg-dark-card/85 backdrop-blur-2xl border border-slate-200 dark:border-white/10 p-4 md:p-5 rounded-[2rem] shadow-xl dark:shadow-2xl animate-fade-up delay-300 relative z-30 transition-colors duration-500 mb-[28px]">
                         <div class="flex flex-col md:flex-row gap-3 relative z-30">
                             
                             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 
-                                <div class="relative" @click.stop>
+                                <div class="relative" :class="{'z-50': activeDropdown === 'city', 'z-10': activeDropdown !== 'city'}" @click.stop>
                                     <div @click="toggleDropdown('city')" 
                                          class="bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 hover:border-brand-500 hover:shadow-glow-subtle transition-all duration-300 group cursor-pointer flex items-center justify-between">
                                         <div class="flex-1 text-right">
@@ -129,7 +137,7 @@ export default {
                                         </svg>
                                     </div>
                                     <transition name="dropdown">
-                                        <div v-if="activeDropdown === 'city'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
+                                        <div v-if="activeDropdown === 'city'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl overflow-hidden">
                                             <div v-for="option in options.city" :key="option" 
                                                  @click="selectOption('city', option)" 
                                                  class="px-5 py-3 text-sm font-semibold text-right text-slate-700 dark:text-slate-200 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg cursor-pointer transition-colors duration-200 flex items-center justify-between">
@@ -140,7 +148,7 @@ export default {
                                     </transition>
                                 </div>
 
-                                <div class="relative" @click.stop>
+                                <div class="relative" :class="{'z-50': activeDropdown === 'type', 'z-10': activeDropdown !== 'type'}" @click.stop>
                                     <div @click="toggleDropdown('type')" 
                                          class="bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 hover:border-brand-500 hover:shadow-glow-subtle transition-all duration-300 group cursor-pointer flex items-center justify-between">
                                         <div class="flex-1 text-right">
@@ -152,7 +160,7 @@ export default {
                                         </svg>
                                     </div>
                                     <transition name="dropdown">
-                                        <div v-if="activeDropdown === 'type'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
+                                        <div v-if="activeDropdown === 'type'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl overflow-hidden">
                                             <div v-for="option in options.type" :key="option" 
                                                  @click="selectOption('type', option)" 
                                                  class="px-5 py-3 text-sm font-semibold text-right text-slate-700 dark:text-slate-200 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg cursor-pointer transition-colors duration-200 flex items-center justify-between">
@@ -163,7 +171,7 @@ export default {
                                     </transition>
                                 </div>
 
-                                <div class="relative" @click.stop>
+                                <div class="relative" :class="{'z-50': activeDropdown === 'day', 'z-10': activeDropdown !== 'day'}" @click.stop>
                                     <div @click="toggleDropdown('day')" 
                                          class="bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 hover:border-brand-500 hover:shadow-glow-subtle transition-all duration-300 group cursor-pointer flex items-center justify-between">
                                         <div class="flex-1 text-right">
@@ -175,7 +183,7 @@ export default {
                                         </svg>
                                     </div>
                                     <transition name="dropdown">
-                                        <div v-if="activeDropdown === 'day'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 max-h-56 overflow-y-auto">
+                                        <div v-if="activeDropdown === 'day'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl max-h-56 overflow-y-auto">
                                             <div v-for="option in options.day" :key="option" 
                                                  @click="selectOption('day', option)" 
                                                  class="px-5 py-3 text-sm font-semibold text-right text-slate-700 dark:text-slate-200 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg cursor-pointer transition-colors duration-200 flex items-center justify-between">
@@ -186,7 +194,7 @@ export default {
                                     </transition>
                                 </div>
 
-                                <div class="relative" @click.stop>
+                                <div class="relative" :class="{'z-50': activeDropdown === 'time', 'z-10': activeDropdown !== 'time'}" @click.stop>
                                     <div @click="toggleDropdown('time')" 
                                          class="bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 hover:border-brand-500 hover:shadow-glow-subtle transition-all duration-300 group cursor-pointer flex items-center justify-between">
                                         <div class="flex-1 text-right">
@@ -198,7 +206,7 @@ export default {
                                         </svg>
                                     </div>
                                     <transition name="dropdown">
-                                        <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl z-50 overflow-hidden">
+                                        <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-2.5 rounded-2xl border border-slate-200 dark:border-white/10 glass-panel shadow-2xl overflow-hidden">
                                             <div v-for="option in options.time" :key="option" 
                                                  @click="selectOption('time', option)" 
                                                  class="px-5 py-3 text-sm font-semibold text-right text-slate-700 dark:text-slate-200 hover:bg-brand-500 hover:text-white dark:hover:text-dark-bg cursor-pointer transition-colors duration-200 flex items-center justify-between">
@@ -210,7 +218,7 @@ export default {
                                 </div>
                             </div>
 
-                            <button @click="navigateToResults" class="md:w-40 bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white dark:text-dark-bg font-black rounded-2xl px-6 py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-glow hover:scale-[1.04] active:scale-95 text-base">
+                            <button @click="navigateToResults" class="md:w-40 bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white dark:text-dark-bg font-black rounded-2xl px-6 py-4 flex items-center justify-center gap-2 transition-all duration-300 shadow-glow hover:scale-[1.04] active:scale-95 text-base z-20">
                                 <span>جستجو کن</span>
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </button>
@@ -330,7 +338,7 @@ export default {
                     </div>
                 </div>
 
-                <!-- بخش اماکن ورزشی محبوب (حفظ شده از قبل) -->
+                <!-- بخش اماکن ورزشی محبوب (بهبود یافته به صورت اسلایدر افقی) -->
                 <div class="mb-16 animate-fade-up">
                     <div class="flex items-end justify-between mb-8">
                         <div>
@@ -346,9 +354,9 @@ export default {
                         </a>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div v-for="(venue, index) in popularVenues" :key="index" 
-                             class="group relative bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] rounded-[2rem] p-5 border border-slate-200 dark:border-white/5 hover:border-brand-500/50 transition-all duration-500 hover:-translate-y-3 shadow-lg dark:shadow-none hover:shadow-[0_22px_45px_-12px_rgba(6,182,212,0.3)] flex flex-col justify-between overflow-hidden">
+                    <div class="flex gap-6 overflow-x-auto pb-8 pt-4 custom-scrollbar snap-x snap-mandatory hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                        <div v-for="(venue, index) in popularVenues" :key="'popular-'+index" 
+                             class="w-[85vw] sm:w-[320px] lg:w-[350px] flex-shrink-0 snap-center group relative bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] rounded-[2rem] p-5 border border-slate-200 dark:border-white/5 hover:border-brand-500/50 transition-all duration-500 hover:-translate-y-3 shadow-lg dark:shadow-none hover:shadow-[0_22px_45px_-12px_rgba(6,182,212,0.3)] flex flex-col justify-between overflow-hidden">
                             
                             <div class="absolute -right-12 -top-12 w-32 h-32 bg-brand-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             
@@ -487,7 +495,7 @@ export default {
                     <div class="relative z-10 max-w-2xl text-center md:text-right">
                         <h3 class="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white mb-4 transition-colors duration-500">مدیریت مجموعه ورزشی با شماست؟</h3>
                         <p class="text-slate-600 dark:text-slate-400 mb-6 transition-colors duration-500">سالن یا زمین ورزشی خود را در رزرو اسپورت ثبت کنید و تقویم رزروهای خود را به صورت کاملا آنلاین و هوشمند مدیریت کنید. افزایش درآمد و کاهش دردسرهای هماهنگی.</p>
-                        <button class="bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white dark:text-dark-bg font-bold px-6 py-3 rounded-xl transition-all duration-300 shadow-glow hover:scale-[1.04]">
+                        <button @click="goToRegisterVenue" class="bg-gradient-to-r from-brand-400 to-cyan-500 hover:from-brand-500 hover:to-cyan-600 text-white dark:text-dark-bg font-bold px-6 py-3 rounded-xl transition-all duration-300 shadow-glow hover:scale-[1.04]">
                             ثبت رایگان مجموعه ورزشی
                         </button>
                     </div>

@@ -4,8 +4,20 @@ export default {
     setup() {
         const { ref, toRefs, computed, watch } = window.Vue;
 
-        // مدیریت وضعیت تب‌های داشبورد (SPA Routing)
-        const activeTab = ref('overview'); 
+        // مدیریت وضعیت تب‌های داشبورد هماهنگ با درخواست‌های صفحات دیگر
+        const activeTab = ref(store.activeDashboardTab || 'overview'); 
+        
+        watch(() => store.activeDashboardTab, (newVal) => {
+            if (newVal) {
+                activeTab.value = newVal;
+                store.activeDashboardTab = null;
+            }
+        });
+
+        watch(activeTab, (newVal) => {
+            store.activeDashboardTab = newVal;
+        });
+
         const userVenueStatus = ref('active'); 
         
         // مدیریت مودال شارژ حساب
@@ -282,6 +294,15 @@ export default {
             activeTab.value = 'venues';
         };
 
+        // ایجاد گزینه‌های ساعت برای Time Pickers
+        const activeTimeDropdown = ref('');
+        const timeOptions = [];
+        for(let h=6; h<=23; h++) {
+            const hour = h.toString().padStart(2, '0');
+            timeOptions.push(`${hour}:00`, `${hour}:30`);
+        }
+        timeOptions.push('24:00');
+
         // وضعیت و داده‌های مربوط به ویزارد ثبت مجموعه ورزشی جدید
         const registerStep = ref(1);
         const venueForm = ref({
@@ -521,7 +542,11 @@ export default {
             removeDoc,
             nextRegisterStep,
             prevRegisterStep,
-            submitVenueRegistration
+            submitVenueRegistration,
+            
+            // Time Pickers سفارشی
+            activeTimeDropdown,
+            timeOptions
         };
     },
     template: `
@@ -1025,8 +1050,8 @@ export default {
                                                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                     </div>
                                                     <transition name="dropdown">
-                                                        <div v-if="activeDropdown === 'year'" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
-                                                            <div v-for="y in ['۱۴۰۴', '۱۴۰۵', '۱۴۰۶']" :key="y" @click="selectDropdownValue('year', y)" class="px-4 py-2.5 hover:bg-brand-50 cursor-pointer font-bold text-slate-700">{{ y }}</div>
+                                                        <div v-if="activeDropdown === 'year'" class="absolute left-0 right-0 mt-1.5 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1">
+                                                            <div v-for="y in ['۱۴۰۴', '۱۴۰۵', '۱۴۰۶']" :key="y" @click="selectDropdownValue('year', y)" class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer font-bold text-slate-700 dark:text-slate-200 transition-colors">{{ y }}</div>
                                                         </div>
                                                     </transition>
                                                 </div>
@@ -1037,8 +1062,8 @@ export default {
                                                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                     </div>
                                                     <transition name="dropdown">
-                                                        <div v-if="activeDropdown === 'month'" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                                                            <div v-for="m in persianMonths" :key="m" @click="selectDropdownValue('month', m)" class="px-4 py-2.5 hover:bg-brand-50 cursor-pointer font-bold text-slate-700">{{ m }}</div>
+                                                        <div v-if="activeDropdown === 'month'" class="absolute left-0 right-0 mt-1.5 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                            <div v-for="m in persianMonths" :key="m" @click="selectDropdownValue('month', m)" class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer font-bold text-slate-700 dark:text-slate-200 transition-colors">{{ m }}</div>
                                                         </div>
                                                     </transition>
                                                 </div>
@@ -1049,8 +1074,8 @@ export default {
                                                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                     </div>
                                                     <transition name="dropdown">
-                                                        <div v-if="activeDropdown === 'day' && closeFormDays.length > 0" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                                                            <div v-for="d in closeFormDays" :key="d" @click="selectDropdownValue('day', d)" class="px-4 py-2.5 hover:bg-brand-50 cursor-pointer font-bold text-slate-700">{{ d }}</div>
+                                                        <div v-if="activeDropdown === 'day' && closeFormDays.length > 0" class="absolute left-0 right-0 mt-1.5 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                            <div v-for="d in closeFormDays" :key="d" @click="selectDropdownValue('day', d)" class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer font-bold text-slate-700 dark:text-slate-200 transition-colors">{{ d }}</div>
                                                         </div>
                                                     </transition>
                                                 </div>
@@ -1058,27 +1083,27 @@ export default {
                                         </div>
 
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div class="relative">
+                                            <div class="relative" :class="{'z-[60]': activeDropdown === 'time'}">
                                                 <span class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">محدوده سانس</span>
                                                 <div @click="toggleDropdown('time')" class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500">
                                                     <span class="font-bold dir-ltr">{{ closeForm.time || 'انتخاب...' }}</span>
                                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
                                                 <transition name="dropdown">
-                                                    <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                                                        <div v-for="t in availableSlotsForClose" :key="t" @click="selectDropdownValue('time', t)" class="px-4 py-2.5 hover:bg-brand-50 cursor-pointer font-bold text-slate-700 dir-ltr text-right">{{ t }}</div>
+                                                    <div v-if="activeDropdown === 'time'" class="absolute left-0 right-0 mt-1.5 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                        <div v-for="t in availableSlotsForClose" :key="t" @click="selectDropdownValue('time', t)" class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer font-bold text-slate-700 dark:text-slate-200 transition-colors dir-ltr text-right">{{ t }}</div>
                                                     </div>
                                                 </transition>
                                             </div>
-                                            <div class="relative">
+                                            <div class="relative" :class="{'z-[60]': activeDropdown === 'reason'}">
                                                 <span class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">علت مسدودسازی</span>
                                                 <div @click="toggleDropdown('reason')" class="w-full bg-slate-50/70 dark:bg-dark-bg/60 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm flex items-center justify-between cursor-pointer transition-colors hover:border-brand-500">
                                                     <span class="font-bold">{{ closeForm.reason || 'انتخاب...' }}</span>
                                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
                                                 <transition name="dropdown">
-                                                    <div v-if="activeDropdown === 'reason'" class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                                                        <div v-for="r in closeReasons" :key="r" @click="selectDropdownValue('reason', r)" class="px-4 py-2.5 hover:bg-brand-50 cursor-pointer font-bold text-slate-700">{{ r }}</div>
+                                                    <div v-if="activeDropdown === 'reason'" class="absolute left-0 right-0 mt-1.5 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-1 max-h-48 overflow-y-auto">
+                                                        <div v-for="r in closeReasons" :key="r" @click="selectDropdownValue('reason', r)" class="px-4 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer font-bold text-slate-700 dark:text-slate-200 transition-colors">{{ r }}</div>
                                                     </div>
                                                 </transition>
                                             </div>
@@ -1272,15 +1297,46 @@ export default {
                                             </div>
                                         </div>
 
-                                        <!-- ساعت کاری پیش‌فرض -->
+                                        <!-- ساعت کاری پیش‌فرض تغییر یافته به کاستوم سلکت -->
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100 dark:border-white/5">
-                                            <div>
+                                            <div class="relative" :class="{'z-50': activeTimeDropdown === 'workStart'}" @blur="activeTimeDropdown = ''" tabindex="0">
                                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت شروع فعالیت سالن <span class="text-red-500">*</span></label>
-                                                <input v-model="venueForm.workingHours.start" type="time" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                <div @click="activeTimeDropdown = activeTimeDropdown === 'workStart' ? '' : 'workStart'" 
+                                                     class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                     :class="{'border-brand-500 ring-2 ring-brand-500/20': activeTimeDropdown === 'workStart'}">
+                                                    <span class="dir-ltr">{{ venueForm.workingHours.start || 'انتخاب ساعت...' }}</span>
+                                                    <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeTimeDropdown === 'workStart'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                                <transition name="dropdown">
+                                                    <div v-if="activeTimeDropdown === 'workStart'" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                        <div v-for="t in timeOptions" :key="'ws'+t" 
+                                                             @click.stop="venueForm.workingHours.start = t; activeTimeDropdown = ''" 
+                                                             class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors text-left dir-ltr flex items-center justify-between group">
+                                                            {{ t }}
+                                                            <svg v-if="venueForm.workingHours.start === t" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                        </div>
+                                                    </div>
+                                                </transition>
                                             </div>
-                                            <div>
+                                            
+                                            <div class="relative" :class="{'z-50': activeTimeDropdown === 'workEnd'}" @blur="activeTimeDropdown = ''" tabindex="0">
                                                 <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت پایان فعالیت سالن <span class="text-red-500">*</span></label>
-                                                <input v-model="venueForm.workingHours.end" type="time" class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                <div @click="activeTimeDropdown = activeTimeDropdown === 'workEnd' ? '' : 'workEnd'" 
+                                                     class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                     :class="{'border-brand-500 ring-2 ring-brand-500/20': activeTimeDropdown === 'workEnd'}">
+                                                    <span class="dir-ltr">{{ venueForm.workingHours.end || 'انتخاب ساعت...' }}</span>
+                                                    <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeTimeDropdown === 'workEnd'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+                                                <transition name="dropdown">
+                                                    <div v-if="activeTimeDropdown === 'workEnd'" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                        <div v-for="t in timeOptions" :key="'we'+t" 
+                                                             @click.stop="venueForm.workingHours.end = t; activeTimeDropdown = ''" 
+                                                             class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors text-left dir-ltr flex items-center justify-between group">
+                                                            {{ t }}
+                                                            <svg v-if="venueForm.workingHours.end === t" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                        </div>
+                                                    </div>
+                                                </transition>
                                             </div>
                                         </div>
 
@@ -1389,13 +1445,43 @@ export default {
                                                         </div>
                                                     </div>
                                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                        <div>
+                                                        <div class="relative" :class="{'z-50': activeTimeDropdown === 'acadStart'}" @blur="activeTimeDropdown = ''" tabindex="0">
                                                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت شروع آکادمی</label>
-                                                            <input v-model="venueForm.academy.startTime" type="time" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                            <div @click="activeTimeDropdown = activeTimeDropdown === 'acadStart' ? '' : 'acadStart'" 
+                                                                 class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                                 :class="{'border-brand-500 ring-2 ring-brand-500/20': activeTimeDropdown === 'acadStart'}">
+                                                                <span class="dir-ltr">{{ venueForm.academy.startTime || 'انتخاب ساعت...' }}</span>
+                                                                <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeTimeDropdown === 'acadStart'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                            </div>
+                                                            <transition name="dropdown">
+                                                                <div v-if="activeTimeDropdown === 'acadStart'" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                                    <div v-for="t in timeOptions" :key="'as'+t" 
+                                                                         @click.stop="venueForm.academy.startTime = t; activeTimeDropdown = ''" 
+                                                                         class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors text-left dir-ltr flex items-center justify-between group">
+                                                                        {{ t }}
+                                                                        <svg v-if="venueForm.academy.startTime === t" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                                    </div>
+                                                                </div>
+                                                            </transition>
                                                         </div>
-                                                        <div>
+                                                        <div class="relative" :class="{'z-50': activeTimeDropdown === 'acadEnd'}" @blur="activeTimeDropdown = ''" tabindex="0">
                                                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ساعت پایان آکادمی</label>
-                                                            <input v-model="venueForm.academy.endTime" type="time" class="w-full bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm font-medium dir-ltr text-right">
+                                                            <div @click="activeTimeDropdown = activeTimeDropdown === 'acadEnd' ? '' : 'acadEnd'" 
+                                                                 class="w-full bg-white dark:bg-dark-bg border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-xl px-5 py-4 flex items-center justify-between cursor-pointer hover:border-brand-500 transition-all shadow-sm font-medium"
+                                                                 :class="{'border-brand-500 ring-2 ring-brand-500/20': activeTimeDropdown === 'acadEnd'}">
+                                                                <span class="dir-ltr">{{ venueForm.academy.endTime || 'انتخاب ساعت...' }}</span>
+                                                                <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{'rotate-180 text-brand-500': activeTimeDropdown === 'acadEnd'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                            </div>
+                                                            <transition name="dropdown">
+                                                                <div v-if="activeTimeDropdown === 'acadEnd'" class="absolute left-0 right-0 mt-2 glass-panel bg-white/95 dark:bg-dark-card/95 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden py-2 max-h-48 overflow-y-auto">
+                                                                    <div v-for="t in timeOptions" :key="'ae'+t" 
+                                                                         @click.stop="venueForm.academy.endTime = t; activeTimeDropdown = ''" 
+                                                                         class="px-5 py-3 hover:bg-brand-50 dark:hover:bg-brand-500/10 cursor-pointer text-slate-700 dark:text-slate-200 font-bold transition-colors text-left dir-ltr flex items-center justify-between group">
+                                                                        {{ t }}
+                                                                        <svg v-if="venueForm.academy.endTime === t" class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                                    </div>
+                                                                </div>
+                                                            </transition>
                                                         </div>
                                                     </div>
                                                 </div>
