@@ -1034,7 +1034,7 @@ export default {
                                         </transition>
                                     </div>
 
-                                    <div class="glass-panel rounded-[2.5rem] p-6 lg:p-10 shadow-lg border border-slate-200 dark:border-white/10 space-y-6">
+                                    <div class="glass-panel rounded-[2.5rem] p-6 lg:p-10 shadow-lg border border-slate-200 dark:border-white/10 space-y-6" style="margin-bottom:70px;">
                                         <div class="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-4">
                                             <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
                                             <h5 class="font-black text-slate-800 dark:text-white text-xl">بستن موقت و محدودسازی سانس‌ها</h5>
