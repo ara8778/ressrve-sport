@@ -2,13 +2,36 @@ import { store, toggleDropdown, selectOption, navigateToResults, openQuickBook, 
 
 export default {
     setup() {
-        const { toRefs } = window.Vue;
+        const { toRefs, computed } = window.Vue;
 
         const goToDetail = (venue) => {
             store.selectedVenue = venue;
             store.currentView = 'venue-detail';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
+
+        const goToProSearch = (sportName) => {
+            if (sportName) {
+                store.initialSport = sportName;
+            }
+            store.currentView = 'pro-search';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        const sportCategories = [
+            { id: 1, name: 'فوتبال', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', color: 'from-emerald-400 to-green-500', shadow: 'shadow-[0_4px_15px_rgba(16,185,129,0.3)]' },
+            { id: 2, name: 'فوتسال', icon: 'M13 10V3L4 14h7v7l9-11h-7z', color: 'from-brand-400 to-cyan-500', shadow: 'shadow-[0_4px_15px_rgba(6,182,212,0.3)]' },
+            { id: 3, name: 'والیبال', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'from-orange-400 to-red-500', shadow: 'shadow-[0_4px_15px_rgba(249,115,22,0.3)]' },
+            { id: 4, name: 'بسکتبال', icon: 'M12 14l9-5-9-5-9 5 9 5z', color: 'from-amber-400 to-orange-500', shadow: 'shadow-[0_4px_15px_rgba(245,158,11,0.3)]' },
+            { id: 5, name: 'هندبال', icon: 'M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11', color: 'from-blue-400 to-indigo-500', shadow: 'shadow-[0_4px_15px_rgba(59,130,246,0.3)]' },
+            { id: 6, name: 'تنیس', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z', color: 'from-lime-400 to-green-500', shadow: 'shadow-[0_4px_15px_rgba(132,204,22,0.3)]' },
+            { id: 7, name: 'پینگ پنگ', icon: 'M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122', color: 'from-rose-400 to-pink-500', shadow: 'shadow-[0_4px_15px_rgba(244,63,94,0.3)]' },
+            { id: 8, name: 'سایر رشته‌ها', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', color: 'from-slate-400 to-slate-500', shadow: 'shadow-[0_4px_15px_rgba(148,163,184,0.3)]' }
+        ];
+
+        const latestVenues = computed(() => {
+            return [...store.popularVenues].reverse();
+        });
 
         return { 
             ...toRefs(store), 
@@ -17,7 +40,10 @@ export default {
             navigateToResults, 
             openQuickBook, 
             handleSlotBooking,
-            goToDetail
+            goToDetail,
+            goToProSearch,
+            sportCategories,
+            latestVenues
         };
     },
     template: `
@@ -194,91 +220,265 @@ export default {
             </div>
 
             <main class="container mx-auto px-4 pb-32 relative z-10 -mt-6">
-                <div class="flex items-end justify-between mb-12 animate-fade-up">
-                    <div>
-                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mb-2 flex items-center gap-3 transition-colors duration-500">
-                            <span class="w-2.5 h-8 bg-gradient-to-b from-brand-400 to-cyan-600 rounded-full inline-block"></span>
-                            اماکن ورزشی محبوب قم
-                        </h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base pr-5 transition-colors duration-500">برخی از بهترین سالن‌های ورزشی ثبت شده با امکان رزرو مستقیم</p>
-                    </div>
-<a href="#" @click.prevent="currentView = 'pro-search'" class="hidden sm:flex items-center gap-1.5 text-brand-500 dark:text-brand-400 hover:text-brand-400 dark:hover:text-brand-300 font-bold transition-all group">
-    مشاهده همه اماکن
-    <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
-</a>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div v-for="(venue, index) in popularVenues" :key="index" 
-                         class="group relative bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] rounded-[2rem] p-5 border border-slate-200 dark:border-white/5 hover:border-brand-500/50 transition-all duration-500 hover:-translate-y-3 shadow-lg dark:shadow-none hover:shadow-[0_22px_45px_-12px_rgba(6,182,212,0.3)] flex flex-col justify-between overflow-hidden">
-                        
-                        <div class="absolute -right-12 -top-12 w-32 h-32 bg-brand-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        
+                
+                <!-- بخش جدید: دسته‌بندی بر اساس رشته ورزشی -->
+                <div class="mb-16 animate-fade-up">
+                    <div class="flex items-end justify-between mb-8">
                         <div>
-                            <div class="relative h-44 rounded-2xl overflow-hidden mb-6 p-[2px] bg-slate-100 dark:bg-gradient-to-tr dark:from-brand-500/20 dark:to-blue-600/20 group-hover:from-brand-400 group-hover:to-cyan-400 transition-all duration-500 shadow-inner">
-                                <div class="w-full h-full rounded-2xl overflow-hidden relative bg-slate-100 dark:bg-transparent">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 dark:from-[#0a0f1d] via-transparent to-transparent z-10 opacity-70"></div>
-                                    <img :src="venue.image" :alt="venue.name" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                                    
-                                    <div class="absolute top-3 right-3 z-20 flex gap-1.5">
-                                        <span class="bg-white/95 dark:bg-dark-bg/95 backdrop-blur text-[11px] font-black px-3 py-1.5 rounded-full text-brand-600 dark:text-brand-300 border border-slate-200 dark:border-white/10 flex items-center gap-1 shadow-md">
-                                            <svg class="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                                            </svg>
-                                            {{ venue.rating }}
-                                        </span>
-                                    </div>
-
-                                    <div class="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-white/90 dark:bg-emerald-500/10 border border-emerald-500/20 backdrop-blur px-2.5 py-1 rounded-lg">
-                                        <span class="status-pulse"></span>
-                                        <span class="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400">آماده رزرو مستقیم</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="px-1">
-                                <h3 class="text-lg font-black text-slate-800 dark:text-white group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors mb-4 line-clamp-1">
-                                    {{ venue.name }}
-                                </h3>
-                                
-                                <div class="grid grid-cols-2 gap-3 mb-6">
-                                    <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
-                                        <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <span class="block text-[9px] text-slate-500">موقعیت</span>
-                                            <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.city }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
-                                        <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <span class="block text-[9px] text-slate-500">پذیرش</span>
-                                            <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.gender }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mb-2 flex items-center gap-3 transition-colors duration-500">
+                                <span class="w-2.5 h-8 bg-gradient-to-b from-brand-400 to-cyan-600 rounded-full inline-block"></span>
+                                دسته‌بندی بر اساس رشته ورزشی
+                            </h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base pr-5 transition-colors duration-500">مستقیم به سراغ رشته ورزشی مورد علاقه‌تان بروید</p>
                         </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 lg:gap-5">
+                        <button v-for="sport in sportCategories" :key="sport.id" 
+                                @click="goToProSearch(sport.name === 'سایر رشته‌ها' ? '' : sport.name)"
+                                class="group bg-white/70 dark:bg-dark-card/70 backdrop-blur-md border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 hover:border-brand-500/50 hover:bg-white dark:hover:bg-dark-card hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-[0_15px_30px_-10px_rgba(6,182,212,0.15)]">
+                            <div :class="['w-12 h-12 rounded-full flex items-center justify-center text-white bg-gradient-to-br transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3', sport.color, sport.shadow]">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="sport.icon"></path></svg>
+                            </div>
+                            <span class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">{{ sport.name }}</span>
+                        </button>
+                    </div>
+                </div>
 
-                        <div class="pt-4 border-t border-slate-200 dark:border-dark-border/60 flex items-center justify-between px-1 transition-colors duration-500">
+                <!-- بخش جدید: اسلایدر جدیدترین مجموعه‌ها -->
+                <div class="mb-16 animate-fade-up">
+                    <div class="flex items-end justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mb-2 flex items-center gap-3 transition-colors duration-500">
+                                <span class="w-2.5 h-8 bg-gradient-to-b from-brand-400 to-cyan-600 rounded-full inline-block"></span>
+                                جدیدترین مجموعه‌های ثبت شده
+                            </h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base pr-5 transition-colors duration-500">تازه‌ترین سالن‌های ورزشی اضافه شده به سامانه</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-6 overflow-x-auto pb-8 pt-4 custom-scrollbar snap-x snap-mandatory hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                        <div v-for="(venue, index) in latestVenues" :key="'latest-'+index" 
+                             class="w-[85vw] sm:w-[320px] lg:w-[350px] flex-shrink-0 snap-center group relative bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] rounded-[2rem] p-5 border border-slate-200 dark:border-white/5 hover:border-brand-500/50 transition-all duration-500 hover:-translate-y-3 shadow-lg dark:shadow-none hover:shadow-[0_22px_45px_-12px_rgba(6,182,212,0.3)] flex flex-col justify-between overflow-hidden">
+                            
+                            <div class="absolute -right-12 -top-12 w-32 h-32 bg-brand-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            
                             <div>
-                                <span class="block text-[9px] text-slate-500 mb-0.5">قیمت هر سانس</span>
-                                <div class="text-brand-600 dark:text-brand-400 font-extrabold text-lg">
-                                    {{ venue.price }} <span class="text-[10px] font-normal text-slate-400">تومان</span>
+                                <div class="relative h-44 rounded-2xl overflow-hidden mb-6 p-[2px] bg-slate-100 dark:bg-gradient-to-tr dark:from-brand-500/20 dark:to-blue-600/20 group-hover:from-brand-400 group-hover:to-cyan-400 transition-all duration-500 shadow-inner">
+                                    <div class="w-full h-full rounded-2xl overflow-hidden relative bg-slate-100 dark:bg-transparent">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 dark:from-[#0a0f1d] via-transparent to-transparent z-10 opacity-70"></div>
+                                        <img :src="venue.image" :alt="venue.name" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                        
+                                        <div class="absolute top-3 right-3 z-20 flex gap-1.5">
+                                            <span class="bg-white/95 dark:bg-dark-bg/95 backdrop-blur text-[11px] font-black px-3 py-1.5 rounded-full text-brand-600 dark:text-brand-300 border border-slate-200 dark:border-white/10 flex items-center gap-1 shadow-md">
+                                                <svg class="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                                {{ venue.rating }}
+                                            </span>
+                                        </div>
+
+                                        <div class="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-white/90 dark:bg-emerald-500/10 border border-emerald-500/20 backdrop-blur px-2.5 py-1 rounded-lg">
+                                            <span class="status-pulse"></span>
+                                            <span class="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400">آماده رزرو مستقیم</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-1">
+                                    <h3 class="text-lg font-black text-slate-800 dark:text-white group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors mb-4 line-clamp-1">
+                                        {{ venue.name }}
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-2 gap-3 mb-6">
+                                        <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
+                                            <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <span class="block text-[9px] text-slate-500">موقعیت</span>
+                                                <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.city }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
+                                            <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <span class="block text-[9px] text-slate-500">پذیرش</span>
+                                                <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.gender }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <button @click="goToDetail(venue)" class="group/btn flex items-center gap-2 bg-brand-500 hover:bg-gradient-to-r hover:from-brand-400 hover:to-cyan-400 text-white dark:text-dark-bg font-black px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:scale-[1.05]">
-                                <span class="text-xs">رزرو فوری</span>
-                                <svg class="w-4 h-4 transform group-hover/btn:-translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                            </button>
+
+                            <div class="pt-4 border-t border-slate-200 dark:border-dark-border/60 flex items-center justify-between px-1 transition-colors duration-500">
+                                <div>
+                                    <span class="block text-[9px] text-slate-500 mb-0.5">قیمت هر سانس</span>
+                                    <div class="text-brand-600 dark:text-brand-400 font-extrabold text-lg">
+                                        {{ venue.price }} <span class="text-[10px] font-normal text-slate-400">تومان</span>
+                                    </div>
+                                </div>
+                                <button @click="goToDetail(venue)" class="group/btn flex items-center gap-2 bg-brand-500 hover:bg-gradient-to-r hover:from-brand-400 hover:to-cyan-400 text-white dark:text-dark-bg font-black px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:scale-[1.05]">
+                                    <span class="text-xs">رزرو فوری</span>
+                                    <svg class="w-4 h-4 transform group-hover/btn:-translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- بخش اماکن ورزشی محبوب (حفظ شده از قبل) -->
+                <div class="mb-16 animate-fade-up">
+                    <div class="flex items-end justify-between mb-8">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mb-2 flex items-center gap-3 transition-colors duration-500">
+                                <span class="w-2.5 h-8 bg-gradient-to-b from-brand-400 to-cyan-600 rounded-full inline-block"></span>
+                                اماکن ورزشی محبوب قم
+                            </h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm md:text-base pr-5 transition-colors duration-500">برخی از بهترین سالن‌های ورزشی ثبت شده با امکان رزرو مستقیم</p>
+                        </div>
+                        <a href="#" @click.prevent="currentView = 'pro-search'" class="hidden sm:flex items-center gap-1.5 text-brand-500 dark:text-brand-400 hover:text-brand-400 dark:hover:text-brand-300 font-bold transition-all group">
+                            مشاهده همه اماکن
+                            <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div v-for="(venue, index) in popularVenues" :key="index" 
+                             class="group relative bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:to-[#0a0f1d] rounded-[2rem] p-5 border border-slate-200 dark:border-white/5 hover:border-brand-500/50 transition-all duration-500 hover:-translate-y-3 shadow-lg dark:shadow-none hover:shadow-[0_22px_45px_-12px_rgba(6,182,212,0.3)] flex flex-col justify-between overflow-hidden">
+                            
+                            <div class="absolute -right-12 -top-12 w-32 h-32 bg-brand-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            
+                            <div>
+                                <div class="relative h-44 rounded-2xl overflow-hidden mb-6 p-[2px] bg-slate-100 dark:bg-gradient-to-tr dark:from-brand-500/20 dark:to-blue-600/20 group-hover:from-brand-400 group-hover:to-cyan-400 transition-all duration-500 shadow-inner">
+                                    <div class="w-full h-full rounded-2xl overflow-hidden relative bg-slate-100 dark:bg-transparent">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 dark:from-[#0a0f1d] via-transparent to-transparent z-10 opacity-70"></div>
+                                        <img :src="venue.image" :alt="venue.name" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                        
+                                        <div class="absolute top-3 right-3 z-20 flex gap-1.5">
+                                            <span class="bg-white/95 dark:bg-dark-bg/95 backdrop-blur text-[11px] font-black px-3 py-1.5 rounded-full text-brand-600 dark:text-brand-300 border border-slate-200 dark:border-white/10 flex items-center gap-1 shadow-md">
+                                                <svg class="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                                {{ venue.rating }}
+                                            </span>
+                                        </div>
+
+                                        <div class="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-white/90 dark:bg-emerald-500/10 border border-emerald-500/20 backdrop-blur px-2.5 py-1 rounded-lg">
+                                            <span class="status-pulse"></span>
+                                            <span class="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400">آماده رزرو مستقیم</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-1">
+                                    <h3 class="text-lg font-black text-slate-800 dark:text-white group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors mb-4 line-clamp-1">
+                                        {{ venue.name }}
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-2 gap-3 mb-6">
+                                        <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
+                                            <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <span class="block text-[9px] text-slate-500">موقعیت</span>
+                                                <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.city }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-50 dark:bg-dark-bg/40 border border-slate-100 dark:border-white/5 rounded-xl p-2.5 flex items-center gap-2 transition-colors duration-500">
+                                            <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-500 dark:text-brand-400 flex-shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <span class="block text-[9px] text-slate-500">پذیرش</span>
+                                                <span class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">{{ venue.gender }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-200 dark:border-dark-border/60 flex items-center justify-between px-1 transition-colors duration-500">
+                                <div>
+                                    <span class="block text-[9px] text-slate-500 mb-0.5">قیمت هر سانس</span>
+                                    <div class="text-brand-600 dark:text-brand-400 font-extrabold text-lg">
+                                        {{ venue.price }} <span class="text-[10px] font-normal text-slate-400">تومان</span>
+                                    </div>
+                                </div>
+                                <button @click="goToDetail(venue)" class="group/btn flex items-center gap-2 bg-brand-500 hover:bg-gradient-to-r hover:from-brand-400 hover:to-cyan-400 text-white dark:text-dark-bg font-black px-4 py-2.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-glow hover:scale-[1.05]">
+                                    <span class="text-xs">رزرو فوری</span>
+                                    <svg class="w-4 h-4 transform group-hover/btn:-translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- بخش جدید: چرا رزرو اسپورت؟ -->
+                <div class="mb-16 animate-fade-up">
+                    <div class="glass-panel rounded-3xl p-8 md:p-12 relative overflow-hidden flex flex-col lg:flex-row items-center gap-10 border-brand-500/20">
+                        <div class="absolute -left-20 -top-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px]"></div>
+                        <div class="absolute right-1/2 bottom-0 w-64 h-64 bg-brand-500/10 rounded-full blur-[80px]"></div>
+                        
+                        <div class="lg:w-1/2 relative z-10">
+                            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-3 transition-colors duration-500">
+                                <span class="w-2.5 h-8 bg-gradient-to-b from-brand-400 to-cyan-600 rounded-full inline-block"></span>
+                                چرا رزرو اسپورت؟
+                            </h2>
+                            <div class="space-y-6 text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed text-justify">
+                                <p>
+                                    پیدا کردن سانس خالی و هماهنگی با سالن‌های ورزشی همیشه یکی از دغدغه‌های اصلی ورزشکاران بوده است. رزرو اسپورت با هدف ایجاد یک پل ارتباطی سریع و هوشمند بین ورزشکاران و مجموعه‌های ورزشی طراحی شده است.
+                                </p>
+                                <p>
+                                    دیگر نیازی به تماس‌های تلفنی مکرر یا مراجعه حضوری برای اطلاع از سانس‌های خالی نیست. شما می‌توانید به صورت کاملا آنلاین، سانس‌های موجود در سالن‌های مختلف را مشاهده، مقایسه و تنها با چند کلیک، سانس دلخواه خود را رزرو و پرداخت کنید.
+                                </p>
+                                <p>
+                                    ما در رزرو اسپورت تلاش می‌کنیم با ارائه اطلاعات دقیق، تصاویر باکیفیت از مجموعه‌ها و نمایش نظرات کاربران، تجربه‌ای مطمئن، سریع و لذت‌بخش را برای شما رقم بزنیم تا زمان بیشتری را صرف ورزش و زمان کمتری را صرف هماهنگی کنید!
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="lg:w-1/2 relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-white/60 dark:bg-dark-card/60 backdrop-blur-md p-5 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-brand-500/30 hover:-translate-y-1 transition-all duration-300">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-400 to-cyan-600 flex items-center justify-center text-white mb-4 shadow-glow-subtle">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <h4 class="font-bold text-slate-800 dark:text-white mb-2">صرفه‌جویی در زمان</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">رزرو سریع در کمتر از یک دقیقه بدون نیاز به تماس تلفنی</p>
+                            </div>
+                            
+                            <div class="bg-white/60 dark:bg-dark-card/60 backdrop-blur-md p-5 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-brand-500/30 hover:-translate-y-1 transition-all duration-300 mt-0 sm:mt-8">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white mb-4 shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <h4 class="font-bold text-slate-800 dark:text-white mb-2">تضمین سانس</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">قطعی شدن آنی رزرو پس از پرداخت موفق در درگاه امن</p>
+                            </div>
+                            
+                            <div class="bg-white/60 dark:bg-dark-card/60 backdrop-blur-md p-5 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-brand-500/30 hover:-translate-y-1 transition-all duration-300">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white mb-4 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                                </div>
+                                <h4 class="font-bold text-slate-800 dark:text-white mb-2">مقایسه هوشمند</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">مشاهده امکانات، قیمت و موقعیت ده‌ها سالن در یک نگاه</p>
+                            </div>
+                            
+                            <div class="bg-white/60 dark:bg-dark-card/60 backdrop-blur-md p-5 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-brand-500/30 hover:-translate-y-1 transition-all duration-300 mt-0 sm:mt-8">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white mb-4 shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+                                </div>
+                                <h4 class="font-bold text-slate-800 dark:text-white mb-2">نظرات واقعی</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">امکان ثبت و مشاهده نظرات ورزشکاران پس از استفاده</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
 
             <div class="container mx-auto px-4 pb-20 relative z-10">
@@ -300,6 +500,11 @@ export default {
                     </div>
                 </div>
             </div>
+            
+            <component :is="'style'">
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            </component>
         </div>
     `
 }

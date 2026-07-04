@@ -4,6 +4,13 @@ export default {
     setup() {
         const { toRefs, computed, reactive, ref, watch } = window.Vue;
         
+        // خواندن اتوماتیک رشته ورزشی پاس داده شده از صفحه اصلی
+        let initialSports = [];
+        if (store.initialSport) {
+            initialSports.push(store.initialSport);
+            setTimeout(() => { store.initialSport = null; }, 100);
+        }
+
         // استیت‌های اختصاصی برای فرم جستجوی پیشرفته با رنج قیمت دوطرفه
         const proFilters = reactive({
             priceMin: 200000,
@@ -11,7 +18,7 @@ export default {
             venueName: '',
             city: 'همه شهرها',
             venueType: 'همه اماکن',
-            sports: [],
+            sports: initialSports,
             gender: 'تفاوتی ندارد',
             sort: 'پیشنهاد ما'
         });
