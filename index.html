@@ -92,11 +92,43 @@
         @keyframes shimmer { 100% { transform: translateX(100%); } }
         .shimmer-btn::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient( 90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 20%, rgba(255, 255, 255, 0.3) 60%, rgba(255, 255, 255, 0) 100% ); animation: shimmer 3s infinite; }
         .social-btn-hover:hover { box-shadow: 0 0 15px rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.3); }
+
+        /* ======================================================= */
+        /* استایل‌های اختصاصی و ترانزیشن انیمیشن لودینگ سراسری هولوگرافیک */
+        /* ======================================================= */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+        }
+        
+        /* انیمیشن پالس ملایم همراه با افکت تابش نوری برای لوگوی لودینگ شما */
+        @keyframes loadingPulseGlow {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+                filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.4));
+            }
+            50% {
+                transform: scale(1.08) rotate(3deg);
+                filter: drop-shadow(0 0 30px rgba(34, 211, 238, 0.75));
+            }
+        }
+        .animate-loading-pulse {
+            animation: loadingPulseGlow 3s ease-in-out infinite;
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-brand-500 selection:text-white transition-colors duration-500">
 
 <div id="app" class="min-h-screen flex flex-col justify-between" @click="closeAllDropdowns">
+    <!-- نمایش پاپ‌آب لودینگ سراسری در صورت فعال بودن فلگ isLoading در استور -->
+    <transition name="fade">
+        <loading-view v-if="isLoading" key="global-loader"></loading-view>
+    </transition>
+
     <div>
         <app-navbar></app-navbar>
 
@@ -110,6 +142,8 @@
             <contact-view v-else-if="currentView === 'contact'" key="contact"></contact-view> 
             <about-view v-else-if="currentView === 'about'" key="about"></about-view>
             <faq-view v-else-if="currentView === 'faq'" key="faq"></faq-view>
+            <error-view v-else-if="currentView === 'error'" key="error"></error-view>
+            <error-test-view v-else-if="currentView === 'error-test'" key="error-test"></error-test-view>
         </transition>
     </div>
 
@@ -119,7 +153,12 @@
 </div>
 
 <script type="module">
+    // ایمپورت‌های اصلی سیستم و استور سراسری برنامه رزرو اسپورت
     import { store, closeAllDropdowns, applyFilters } from './components/store.js';
+    
+    // ایمپورت کامپوننت لودینگ سفارشی با انیمیشن مدرن و تصاویر اختصاصی
+    import LoadingView from './components/LoadingView.js';
+    
     import AppNavbar from './components/AppNavbar.js';
     import HomeView from './components/HomeView.js';
     import ResultsView from './components/ResultsView.js';
@@ -134,6 +173,7 @@
     import ContactView from './components/ContactView.js';
     import AboutView from './components/AboutView.js';
     import FaqView from './components/Faq.js';
+    import ErrorView from './components/ErrorView.js';
 
     const { createApp, toRefs, onMounted } = window.Vue;
 
@@ -155,6 +195,9 @@
         }
     });
 
+    // ثبت و معرفی کامپوننت لودینگ سفارشی در اپلیکیشن Vue
+    app.component('loading-view', LoadingView);
+
     app.component('app-navbar', AppNavbar);
     app.component('home-view', HomeView);
     app.component('results-view', ResultsView);
@@ -169,6 +212,7 @@
     app.component('contact-view', ContactView);
     app.component('about-view', AboutView);
     app.component('faq-view', FaqView);
+    app.component('error-view', ErrorView);
 
     app.mount('#app');
 </script>

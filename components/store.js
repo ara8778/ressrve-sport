@@ -2,6 +2,7 @@ const { reactive } = window.Vue;
 
 export const store = reactive({
     currentView: 'home', // 'home' | 'results' | 'auth' | 'venue-detail' | 'dashboard'
+    isLoading: false, // متغیر سراسری جهت مدیریت وضعیت نمایش انیمیشن بارگذاری
     isDark: false,
     isMobileMenuOpen: false,
     showNotifications: false,
@@ -195,6 +196,9 @@ export const store = reactive({
         image: '',
         timeSlot: '',
         slots: []
+    },
+    errorData: {
+        code: 404
     }
 });
 
@@ -308,4 +312,53 @@ export const navigateToAdvancedSearch = () => {
     // مطمئن شو کلمه‌ای که ست می‌کنی دقیقاً pro-search باشه
 store.currentView = 'pro-search';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+export const triggerError = (code) => {
+    store.errorData.code = code;
+    store.currentView = 'error';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+export const navigateToErrorTest = () => {
+    store.currentView = 'error-test';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// =========================================================================
+// بخش جدید: مدیریت پیشرفته بارگذاری (Loading State Controller)
+// =========================================================================
+
+/**
+ * تابع فعال‌سازی وضعیت بارگذاری سراسری برنامه
+ */
+export const startLoading = () => {
+    store.isLoading = true;
+};
+
+/**
+ * تابع غیرفعال‌سازی وضعیت بارگذاری سراسری برنامه
+ */
+export const stopLoading = () => {
+    store.isLoading = false;
+};
+
+/**
+ * تابع جهت جابجایی بین صفحات با انیمیشن مدرن لودینگ هولوگرافیک ورزشی
+ * @param {string} viewName - نام نمای مقصد جهت تغییر نمایش
+ * @param {number} delay - میزان زمان تاخیر بارگذاری به میلی‌ثانیه جهت زیبایی کاربری
+ */
+export const navigateTo = (viewName, delay = 850) => {
+    // ۱. فعال کردن انیمیشن بارگذاری سفارشی با لوگوی ورزشی شما
+    startLoading();
+    
+    // ۲. ایجاد یک وقفه هوشمند جهت لود همزمان داده‌ها و جابجایی نرم
+    setTimeout(() => {
+        store.currentView = viewName;
+        
+        // ۳. غیرفعال‌سازی لودینگ پس از اتمام بارگذاری کامل کامپوننت مقصد
+        stopLoading();
+        
+        // ۴. اسکرول کاملا روان و کاربرپسند به صدر صفحه وب‌سایت
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, delay);
 };
